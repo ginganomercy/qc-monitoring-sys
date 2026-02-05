@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
     {
         // Seed in order: master data first, then transactional data
         $this->call([
+            UserSeeder::class,
             ProductSeeder::class,
             LineSeeder::class,
             DefectTypeSeeder::class,
