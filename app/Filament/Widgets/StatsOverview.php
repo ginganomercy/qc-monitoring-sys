@@ -10,13 +10,19 @@ class StatsOverview extends BaseWidget
 {
     protected static ?int $sort = 1;
 
+    protected static bool $isLazy = true; // ✅ Lazy load for faster initial page render
+
     protected function getStats(): array
     {
-        // Get inspections for today
-        $today = Inspection::whereDate('inspection_date', today())->get();
-        $totalToday = $today->count();
-        $passedToday = $today->where('status', 'pass')->count();
-        $rejectedToday = $today->where('status', 'reject')->count();
+        // ✅ OPTIMIZED: Use direct COUNT queries instead of loading all data
+        // Before: Load 250+ records then filter in PHP
+        // After: Single COUNT query per stat
+
+        $totalToday = Inspection::whereDate('inspection_date', today())->count();
+        $passedToday = Inspection::whereDate('inspection_date', today())
+            ->where('status', 'pass')
+            ->count();
+        $rejectedToday = $totalToday - $passedToday; // Calculate instead of querying
         $passRate = $totalToday > 0 ? round(($passedToday / $totalToday) * 100, 1) : 0;
 
         // Get critical defects today

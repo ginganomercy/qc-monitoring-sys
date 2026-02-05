@@ -11,6 +11,8 @@ class RecentInspections extends BaseWidget
 {
     protected static ?int $sort = 4;
 
+    protected static bool $isLazy = true; // ✅ Lazy load to prevent blocking initial page load
+
     protected int|string|array $columnSpan = 'full';
 
     public function table(Table $table): Table

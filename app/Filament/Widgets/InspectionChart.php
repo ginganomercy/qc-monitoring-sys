@@ -12,6 +12,8 @@ class InspectionChart extends ChartWidget
 
     protected static ?int $sort = 2;
 
+    protected static bool $isLazy = true; // ✅ Lazy load for progressive rendering
+
     protected function getData(): array
     {
         $data = [];

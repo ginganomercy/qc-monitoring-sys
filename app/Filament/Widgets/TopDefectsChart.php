@@ -12,32 +12,36 @@ class TopDefectsChart extends ChartWidget
 
     protected static ?int $sort = 3;
 
+    protected static bool $isLazy = true; // ✅ Lazy load to avoid blocking page load
+
     protected function getData(): array
     {
-        // Get top 5 defect types from last 7 days
-        $defects = Inspection::where('status', 'reject')
+        // ✅ OPTIMIZED: Use SQL GROUP BY instead of loading all data and grouping in PHP
+        // Before: Load 100+ reject inspections, group in collection
+        // After: Single query with GROUP BY
+
+        $defects = Inspection::selectRaw('defect_type_id, COUNT(*) as count')
+            ->where('status', 'reject')
             ->whereDate('inspection_date', '>=', now()->subDays(7))
-            ->with('defectType')
-            ->get()
+            ->whereNotNull('defect_type_id')
             ->groupBy('defect_type_id')
-            ->map(function ($group) {
-                return $group->count();
-            })
-            ->sortDesc()
-            ->take(5);
+            ->orderByDesc('count')
+            ->limit(5)
+            ->with('defectType')  // Eager load defect type info
+            ->get();
 
         $labels = [];
         $data = [];
         $colors = [];
 
-        foreach ($defects as $defectTypeId => $count) {
-            if ($defectTypeId) {
-                $defectType = DefectType::find($defectTypeId);
-                $labels[] = $defectType->name ?? 'Unknown';
-                $data[] = $count;
+        foreach ($defects as $defect) {
+            $defectType = $defect->defectType;
+            if ($defectType) {
+                $labels[] = $defectType->name;
+                $data[] = $defect->count;
 
                 // Color based on severity
-                $colors[] = match ($defectType->severity ?? 'medium') {
+                $colors[] = match ($defectType->severity) {
                     'critical' => 'rgb(220, 38, 38)',
                     'high' => 'rgb(239, 68, 68)',
                     'medium' => 'rgb(251, 146, 60)',
