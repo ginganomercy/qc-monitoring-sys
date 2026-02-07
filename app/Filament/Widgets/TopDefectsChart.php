@@ -8,7 +8,7 @@ use Filament\Widgets\ChartWidget;
 
 class TopDefectsChart extends ChartWidget
 {
-    protected static ?string $heading = 'Top 5 Defects (Last 7 Days)';
+    protected static ?string $heading = '5 Defect Teratas (7 Hari Terakhir)';
 
     protected static ?int $sort = 3;
 
@@ -54,7 +54,7 @@ class TopDefectsChart extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'Defect Count',
+                    'label' => 'Jumlah Defect',
                     'data' => $data,
                     'backgroundColor' => $colors,
                 ],

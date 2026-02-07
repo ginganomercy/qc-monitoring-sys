@@ -16,24 +16,33 @@ class LineResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-queue-list';
 
-    protected static ?string $navigationGroup = 'Master Data';
+    protected static ?string $navigationGroup = 'Data Master';
 
     protected static ?int $navigationSort = 2;
+
+    protected static ?string $navigationLabel = 'Line Produksi';
+
+    protected static ?string $label = 'Line Produksi';
+
+    protected static ?string $pluralLabel = 'Line Produksi';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\TextInput::make('code')
+                    ->label('Kode')
                     ->required()
                     ->maxLength(50)
                     ->unique(ignoreRecord: true),
 
                 Forms\Components\TextInput::make('name')
+                    ->label('Nama Line')
                     ->required()
                     ->maxLength(255),
 
                 Forms\Components\Toggle::make('is_active')
+                    ->label('Aktif')
                     ->required()
                     ->default(true),
             ]);
@@ -44,38 +53,42 @@ class LineResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('code')
+                    ->label('Kode')
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Nama Line')
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\IconColumn::make('is_active')
+                    ->label('Aktif')
                     ->boolean()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('inspections_count')
                     ->counts('inspections')
-                    ->label('Inspections')
+                    ->label('Jumlah Inspeksi')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('dailyTargets_count')
                     ->counts('dailyTargets')
-                    ->label('Targets')
+                    ->label('Target Harian')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Dibuat Pada')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_active')
-                    ->label('Active')
+                    ->label('Status Aktif')
                     ->boolean()
-                    ->trueLabel('Only Active')
-                    ->falseLabel('Only Inactive')
+                    ->trueLabel('Hanya Aktif')
+                    ->falseLabel('Hanya Tidak Aktif')
                     ->native(false),
             ])
             ->actions([

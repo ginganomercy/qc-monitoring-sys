@@ -22,35 +22,37 @@ class RecentInspections extends BaseWidget
                 // ✅ Optimized: Selective column loading + eager loading
                 // Before: Load all columns (SELECT *)
                 // After: Load only needed columns (40% less memory, 15% faster)
-                fn(): \Illuminate\Database\Eloquent\Builder => Inspection::select([
-                    'id',
-                    'inspection_date',
-                    'status',
-                    'product_id',
-                    'line_id',
-                    'defect_type_id',
-                    'component_id',
-                    'inspector_id',
-                    'created_at',
-                ])->with([
-                            'product:id,style_number',          // ✅ Only load needed columns
-                            'line:id,code',
-                            'defectType:id,name,severity',
-                            'component:id,name',
-                            'inspector:id,name',
-                        ])
-                    ->latest('inspection_date')
-                    ->latest('created_at')
-                    ->limit(10)
+                function () {
+                    return Inspection::select([
+                        'id',
+                        'inspection_date',
+                        'status',
+                        'product_id',
+                        'line_id',
+                        'defect_type_id',
+                        'component_id',
+                        'inspector_id',
+                        'created_at',
+                    ])->with([
+                                'product:id,style_number',          // ✅ Only load needed columns
+                                'line:id,code',
+                                'defectType:id,name,severity',
+                                'component:id,name',
+                                'inspector:id,name',
+                            ])
+                        ->latest('inspection_date')
+                        ->latest('created_at')
+                        ->limit(10);
+                }
             )
             ->columns([
                 Tables\Columns\TextColumn::make('inspection_date')
-                    ->label('Date')
+                    ->label('Tanggal')
                     ->date()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('product.style_number')
-                    ->label('Product')
+                    ->label('Produk')
                     ->searchable()
                     ->sortable(),
 
@@ -59,6 +61,7 @@ class RecentInspections extends BaseWidget
                     ->searchable(),
 
                 Tables\Columns\BadgeColumn::make('status')
+                    ->label('Status')
                     ->colors([
                         'success' => 'pass',
                         'danger' => 'reject',
@@ -70,7 +73,7 @@ class RecentInspections extends BaseWidget
                     ->placeholder('—'),
 
                 Tables\Columns\BadgeColumn::make('defectType.severity')
-                    ->label('Severity')
+                    ->label('Tingkat Keparahan')
                     ->color(fn(?string $state): string => match ($state) {
                         'low' => 'success',      // ✅ Green
                         'medium' => 'warning',   // ✅ Yellow/Orange
@@ -84,6 +87,6 @@ class RecentInspections extends BaseWidget
                     ->label('Inspector')
                     ->toggleable(),
             ])
-            ->heading('Recent Inspections (Latest 10)');
+            ->heading('Inspeksi Terbaru (10 Terakhir)');
     }
 }

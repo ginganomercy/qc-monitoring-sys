@@ -17,22 +17,15 @@ class UserSeeder extends Seeder
         User::create([
             'name' => 'Admin QC',
             'email' => 'admin@qc.com',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('tegal*2020'),
             'email_verified_at' => now(),
         ]);
 
-        // Create QC inspector users
+        // Create QC inspector user
         User::create([
-            'name' => 'Inspector 1',
-            'email' => 'inspector1@qc.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
-
-        User::create([
-            'name' => 'Inspector 2',
-            'email' => 'inspector2@qc.com',
-            'password' => Hash::make('password'),
+            'name' => 'Alisa',
+            'email' => 'alisa2891@qc.com',
+            'password' => Hash::make('tegal*2020'),
             'email_verified_at' => now(),
         ]);
     }

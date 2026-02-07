@@ -8,7 +8,7 @@ use Illuminate\Support\Carbon;
 
 class InspectionChart extends ChartWidget
 {
-    protected static ?string $heading = 'Daily Inspections (Last 7 Days)';
+    protected static ?string $heading = 'Inspeksi Harian (7 Hari Terakhir)';
 
     protected static ?int $sort = 2;
 
@@ -40,19 +40,19 @@ class InspectionChart extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'Total Inspections',
+                    'label' => 'Total Inspeksi',
                     'data' => $data['total'],
                     'borderColor' => 'rgb(59, 130, 246)',
                     'backgroundColor' => 'rgba(59, 130, 246, 0.1)',
                 ],
                 [
-                    'label' => 'Passed',
+                    'label' => 'Lolos',
                     'data' => $data['passed'],
                     'borderColor' => 'rgb(34, 197, 94)',
                     'backgroundColor' => 'rgba(34, 197, 94, 0.1)',
                 ],
                 [
-                    'label' => 'Rejected',
+                    'label' => 'Ditolak',
                     'data' => $data['rejected'],
                     'borderColor' => 'rgb(239, 68, 68)',
                     'backgroundColor' => 'rgba(239, 68, 68, 0.1)',

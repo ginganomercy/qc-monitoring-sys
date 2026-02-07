@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\InspectionResource\Pages;
+use App\Helpers\CacheHelper;
 use App\Models\Inspection;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -17,52 +18,95 @@ class InspectionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-check';
 
-    protected static ?string $navigationGroup = 'QC Management';
+    protected static ?string $navigationGroup = 'Manajemen QC';
 
     protected static ?int $navigationSort = 1;
+
+    protected static ?string $navigationLabel = 'Inspeksi';
+
+    protected static ?string $label = 'Inspeksi';
+
+    protected static ?string $pluralLabel = 'Inspeksi';
+
+    /**
+     * Optimize table queries with eager loading
+     * Prevents N+1 queries on inspection list
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with([
+                'product:id,style_number',
+                'line:id,code,name',
+                'defectType:id,name,severity',
+                'component:id,name',
+                'inspector:id,name',
+            ]);
+    }
+
+    /**
+     * Cache navigation badge count (5 minutes TTL)
+     * Reduces database hits on navigation render
+     */
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) CacheHelper::getResourceCount(
+            static::getModel(),
+            'inspections_count'
+        );
+    }
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Inspection Details')
+                Forms\Components\Section::make('Detail Inspeksi')
                     ->schema([
                         Forms\Components\DatePicker::make('inspection_date')
+                            ->label('Tanggal Inspeksi')
+                            ->label('Tanggal Inspeksi')
                             ->required()
                             ->default(now())
                             ->native(false),
 
                         Forms\Components\Select::make('product_id')
+                            ->label('Produk')
                             ->relationship('product', 'style_number')
                             ->searchable()
                             ->preload()
                             ->required()
                             ->createOptionForm([
                                 Forms\Components\TextInput::make('style_number')
+                                    ->label('Nomor Style')
                                     ->required()
                                     ->maxLength(100)
                                     ->unique(),
-                                Forms\Components\Textarea::make('description'),
+                                Forms\Components\Textarea::make('description')
+                                    ->label('Deskripsi'),
                                 Forms\Components\Toggle::make('is_active')
+                                    ->label('Aktif')
                                     ->default(true),
                             ]),
 
                         Forms\Components\Select::make('line_id')
+                            ->label('Line')
                             ->relationship('line', 'name')
                             ->searchable()
                             ->preload()
                             ->required(),
 
                         Forms\Components\Select::make('status')
+                            ->label('Status')
                             ->options([
-                                'pass' => 'Pass',
-                                'reject' => 'Reject',
+                                'pass' => 'Lolos',
+                                'reject' => 'Ditolak',
                             ])
                             ->required()
                             ->reactive()
                             ->default('pass'),
 
                         Forms\Components\Select::make('inspector_id')
+                            ->label('Inspector')
                             ->relationship('inspector', 'name')
                             ->searchable()
                             ->preload()
@@ -70,21 +114,24 @@ class InspectionResource extends Resource
                             ->default(fn() => auth()->id()),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Defect Information')
+                Forms\Components\Section::make('Informasi Defect')
                     ->schema([
                         Forms\Components\Select::make('defect_type_id')
+                            ->label('Jenis Defect')
                             ->relationship('defectType', 'name')
                             ->searchable()
                             ->preload()
                             ->visible(fn(Forms\Get $get) => $get('status') === 'reject'),
 
                         Forms\Components\Select::make('component_id')
+                            ->label('Komponen')
                             ->relationship('component', 'name')
                             ->searchable()
                             ->preload()
                             ->visible(fn(Forms\Get $get) => $get('status') === 'reject'),
 
                         Forms\Components\Textarea::make('notes')
+                            ->label('Catatan')
                             ->maxLength(65535)
                             ->columnSpanFull()
                             ->visible(fn(Forms\Get $get) => $get('status') === 'reject'),
@@ -98,19 +145,23 @@ class InspectionResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('inspection_date')
+                    ->label('Tanggal Inspeksi')
                     ->date()
                     ->sortable()
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('product.style_number')
+                    ->label('Produk')
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('line.code')
+                    ->label('Line')
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\BadgeColumn::make('status')
+                    ->label('Status')
                     ->colors([
                         'success' => 'pass',
                         'danger' => 'reject',
@@ -118,27 +169,32 @@ class InspectionResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('defectType.name')
+                    ->label('Jenis Defect')
                     ->searchable()
                     ->toggleable()
                     ->placeholder('—'),
 
                 Tables\Columns\TextColumn::make('component.name')
+                    ->label('Komponen')
                     ->toggleable()
                     ->placeholder('—'),
 
                 Tables\Columns\TextColumn::make('inspector.name')
+                    ->label('Inspector')
                     ->toggleable(),
 
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Dibuat Pada')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
+                    ->label('Status')
                     ->options([
-                        'pass' => 'Pass',
-                        'reject' => 'Reject',
+                        'pass' => 'Lolos',
+                        'reject' => 'Ditolak',
                     ]),
 
                 Tables\Filters\SelectFilter::make('product')

@@ -39,26 +39,26 @@ class StatsOverview extends BaseWidget
             ->count();
 
         return [
-            Stat::make('Today\'s Inspections', $totalToday)
-                ->description('Total inspections completed today')
+            Stat::make('Inspeksi Hari Ini', $totalToday)
+                ->description('Total inspeksi hari ini')
                 ->descriptionIcon('heroicon-m-clipboard-document-check')
                 ->color('primary')
                 ->chart([7, 12, 18, 15, 22, 19, $totalToday]),
 
-            Stat::make('Pass Rate Today', $passRate . '%')
-                ->description($passedToday . ' passed, ' . $rejectedToday . ' rejected')
+            Stat::make('Tingkat Kelulusan', $passRate . '%')
+                ->description($passedToday . ' lolos, ' . $rejectedToday . ' ditolak')
                 ->descriptionIcon($passRate >= 85 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down')
                 ->color($passRate >= 85 ? 'success' : ($passRate >= 70 ? 'warning' : 'danger'))
                 ->chart([82, 85, 88, 84, 87, 85, $passRate]),
 
-            Stat::make('Critical Defects', $criticalToday)
-                ->description('Today\'s critical issues')
+            Stat::make('Defect Kritis', $criticalToday)
+                ->description('Masalah kritis hari ini')
                 ->descriptionIcon('heroicon-m-exclamation-triangle')
                 ->color($criticalToday === 0 ? 'success' : 'danger')
                 ->chart([3, 2, 4, 1, 2, 3, $criticalToday]),
 
-            Stat::make('This Month', $thisMonth)
-                ->description('Total inspections this month')
+            Stat::make('Bulan Ini', $thisMonth)
+                ->description('Total inspeksi bulan ini')
                 ->descriptionIcon('heroicon-m-calendar-days')
                 ->color('info')
                 ->chart([120, 145, 178, 165, 198, 215, $thisMonth]),

@@ -16,20 +16,28 @@ class ComponentResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-puzzle-piece';
 
-    protected static ?string $navigationGroup = 'Master Data';
+    protected static ?string $navigationGroup = 'Data Master';
 
     protected static ?int $navigationSort = 4;
+
+    protected static ?string $navigationLabel = 'Komponen';
+
+    protected static ?string $label = 'Komponen';
+
+    protected static ?string $pluralLabel = 'Komponen';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
+                    ->label('Nama')
                     ->required()
                     ->maxLength(255)
                     ->unique(ignoreRecord: true),
 
                 Forms\Components\Toggle::make('is_active')
+                    ->label('Aktif')
                     ->required()
                     ->default(true),
             ]);
@@ -40,29 +48,32 @@ class ComponentResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Nama')
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\IconColumn::make('is_active')
+                    ->label('Aktif')
                     ->boolean()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('inspections_count')
                     ->counts('inspections')
-                    ->label('Inspections')
+                    ->label('Jumlah Inspeksi')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Dibuat Pada')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_active')
-                    ->label('Active')
+                    ->label('Status Aktif')
                     ->boolean()
-                    ->trueLabel('Only Active')
-                    ->falseLabel('Only Inactive')
+                    ->trueLabel('Hanya Aktif')
+                    ->falseLabel('Hanya Tidak Aktif')
                     ->native(false),
             ])
             ->actions([

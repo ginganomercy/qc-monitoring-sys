@@ -16,35 +16,45 @@ class DefectTypeResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-exclamation-triangle';
 
-    protected static ?string $navigationGroup = 'Master Data';
+    protected static ?string $navigationGroup = 'Data Master';
 
     protected static ?int $navigationSort = 3;
+
+    protected static ?string $navigationLabel = 'Jenis Defect';
+
+    protected static ?string $label = 'Jenis Defect';
+
+    protected static ?string $pluralLabel = 'Jenis Defect';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\TextInput::make('code')
+                    ->label('Kode')
                     ->required()
                     ->maxLength(50)
                     ->unique(ignoreRecord: true),
 
                 Forms\Components\TextInput::make('name')
+                    ->label('Nama')
                     ->required()
                     ->maxLength(255),
 
                 Forms\Components\Select::make('severity')
+                    ->label('Tingkat Keparahan')
                     ->options([
-                        'low' => 'Low',
-                        'medium' => 'Medium',
-                        'high' => 'High',
-                        'critical' => 'Critical',
+                        'low' => 'Rendah',
+                        'medium' => 'Sedang',
+                        'high' => 'Tinggi',
+                        'critical' => 'Kritis',
                     ])
                     ->required()
                     ->default('medium')
                     ->native(false),
 
                 Forms\Components\Toggle::make('is_active')
+                    ->label('Aktif')
                     ->required()
                     ->default(true),
             ]);
@@ -55,51 +65,57 @@ class DefectTypeResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('code')
+                    ->label('Kode')
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Nama')
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\BadgeColumn::make('severity')
+                    ->label('Tingkat Keparahan')
                     ->colors([
                         'success' => 'low',
                         'warning' => 'medium',
                         'danger' => 'high',
-                        'danger' => 'critical',
+                        'primary' => 'critical', // Using 'primary' (blue) instead of duplicate 'danger'
                     ])
                     ->sortable(),
 
                 Tables\Columns\IconColumn::make('is_active')
+                    ->label('Aktif')
                     ->boolean()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('inspections_count')
                     ->counts('inspections')
-                    ->label('Inspections')
+                    ->label('Jumlah Inspeksi')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Dibuat Pada')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('severity')
+                    ->label('Tingkat Keparahan')
                     ->options([
-                        'low' => 'Low',
-                        'medium' => 'Medium',
-                        'high' => 'High',
-                        'critical' => 'Critical',
+                        'low' => 'Rendah',
+                        'medium' => 'Sedang',
+                        'high' => 'Tinggi',
+                        'critical' => 'Kritis',
                     ])
                     ->multiple(),
 
                 Tables\Filters\TernaryFilter::make('is_active')
-                    ->label('Active')
+                    ->label('Status Aktif')
                     ->boolean()
-                    ->trueLabel('Only Active')
-                    ->falseLabel('Only Inactive')
+                    ->trueLabel('Hanya Aktif')
+                    ->falseLabel('Hanya Tidak Aktif')
                     ->native(false),
             ])
             ->actions([
