@@ -1,10 +1,11 @@
 # 🗄️ DATABASE SCHEMA - QC Monitoring System
 
-**Version**: 1.0  
-**Database**: MySQL 8.0.44  
-**Charset**: utf8mb4_unicode_ci  
+**Version**: 1.2.0  
+**Database**: MySQL 8.0+  
+**Charset**: utf8mb4  
 **Collation**: utf8mb4_unicode_ci  
-**Engine**: InnoDB
+**Engine**: InnoDB  
+**Last Updated**: 2026-02-19
 
 ---
 
@@ -84,12 +85,17 @@ erDiagram
     INSPECTIONS {
         bigint id PK
         date inspection_date
+        tinyint inspection_hour "0-23, nullable"
         bigint product_id FK
         bigint line_id FK
         enum status "pass|reject"
-        bigint defect_type_id FK "nullable, required if reject"
+        bigint defect_type_id FK "nullable"
         bigint component_id FK "nullable"
         text notes "nullable"
+        int total_quantity "default 1"
+        string issue_type "nullable"
+        int issue_quantity "default 0"
+        int ok_quantity "VIRTUAL: total-issue"
         bigint inspector_id FK
         timestamp created_at
         timestamp updated_at
@@ -300,17 +306,22 @@ UNIQUE KEY `daily_targets_line_date_unique` (`line_id`, `target_date`)
 |--------|------|--------|------|---------|-----|-------|-------------|
 | `id` | BIGINT UNSIGNED | - | NO | - | PRI | AUTO_INCREMENT | Primary key |
 | `inspection_date` | DATE | - | NO | - | MUL | - | Date of inspection |
+| `inspection_hour` | TINYINT | - | YES | NULL | MUL | - | Hour of inspection (0–23) |
 | `product_id` | BIGINT UNSIGNED | - | NO | - | MUL | - | Reference to products.id |
 | `line_id` | BIGINT UNSIGNED | - | NO | - | MUL | - | Reference to lines.id |
 | `status` | ENUM | - | NO | - | MUL | - | Values: pass, reject |
-| `defect_type_id` | BIGINT UNSIGNED | - | YES | NULL | MUL | - | Reference to defect_types.id (nullable) |
-| `component_id` | BIGINT UNSIGNED | - | YES | NULL | MUL | - | Reference to components.id (nullable) |
+| `defect_type_id` | BIGINT UNSIGNED | - | YES | NULL | MUL | - | Reference to defect_types.id |
+| `component_id` | BIGINT UNSIGNED | - | YES | NULL | MUL | - | Reference to components.id |
 | `notes` | TEXT | - | YES | NULL | - | - | Additional inspector notes |
+| `total_quantity` | INT UNSIGNED | - | NO | 1 | MUL | - | Total quantity inspected |
+| `issue_type` | VARCHAR | 255 | YES | NULL | - | - | Description of issue found |
+| `issue_quantity` | INT UNSIGNED | - | NO | 0 | - | - | Quantity with issues (≤ total_quantity) |
+| `ok_quantity` | INT UNSIGNED | - | NO | - | - | **STORED GENERATED** `total_quantity - issue_quantity` | Defect-free quantity |
 | `inspector_id` | BIGINT UNSIGNED | - | NO | - | MUL | - | Reference to users.id |
 | `created_at` | TIMESTAMP | - | YES | NULL | MUL | - | Record creation time |
 | `updated_at` | TIMESTAMP | - | YES | NULL | - | - | Last update time |
 
-**Indexes** (14 total - CRITICAL for performance):
+**Indexes** (16 total - CRITICAL for performance):
 ```sql
 -- Primary Key
 PRIMARY KEY (`id`)
@@ -330,6 +341,8 @@ INDEX `inspections_defect_type_id_index` (`defect_type_id`)
 INDEX `inspections_component_id_index` (`component_id`)
 INDEX `inspections_inspector_id_index` (`inspector_id`)
 INDEX `inspections_created_at_index` (`created_at`)
+INDEX `idx_inspection_hour` (`inspection_hour`)        -- Sprint 12: hourly analytics
+INDEX `idx_total_quantity` (`total_quantity`)          -- Sprint 12: quantity reports
 
 -- Composite Indexes (CRITICAL for dashboard performance)
 INDEX `inspections_status_date_index` (`status`, `inspection_date`)
@@ -339,19 +352,25 @@ INDEX `inspections_line_date_index` (`line_id`, `inspection_date`)
 **Business Rules**:
 1. **Status Logic**:
    - If `status = 'pass'` → `defect_type_id` and `component_id` MUST be NULL
-   - If `status = 'reject'` → `defect_type_id` is REQUIRED
+   - If `status = 'reject'` → `defect_type_id` is REQUIRED, `issue_quantity` must be ≥ 1
 
-2. **Date Validation**:
-   - `inspection_date` cannot be future date
-   - `inspection_date` cannot be > 30 days in past (configurable)
+2. **Quantity Logic**:
+   - `total_quantity` must be ≥ 1 (enforced by model)
+   - `issue_quantity` cannot exceed `total_quantity` (enforced by model)
+   - `ok_quantity` is a **stored generated column**: `total_quantity - issue_quantity` (MySQL computes automatically)
 
-3. **Data Integrity**:
+3. **Date Validation**:
+   - `inspection_date` cannot be a future date
+   - `inspection_date` cannot be > 30 days in the past (configurable)
+
+4. **Data Integrity**:
    - Cannot delete product/line/inspector if has inspections (RESTRICT)
    - Deleting defect_type/component sets field to NULL (SET NULL)
 
-4. **Performance**:
+5. **Performance**:
    - Composite index on `(status, inspection_date)` speeds up dashboard queries by 90%
    - Composite index on `(line_id, inspection_date)` speeds up line reports by 85%
+   - `inspection_hour` index supports hourly defect analytics
 
 ---
 
@@ -496,12 +515,14 @@ LIMIT 5;
 
 ### Record Growth Projection
 
+> Row size increased slightly due to quantity columns added in v1.2.0 (~20 bytes/row additional).
+
 | Year | Products | Lines | Inspections | Total Size |
 |------|----------|-------|-------------|------------|
-| Y1 | 1,200 | 50 | 600,000 | ~150 MB |
-| Y2 | 2,400 | 50 | 1,200,000 | ~300 MB |
-| Y3 | 3,600 | 50 | 1,800,000 | ~450 MB |
-| Y5 | 6,000 | 50 | 3,000,000 | ~750 MB |
+| Y1 | 1,200 | 50 | 600,000 | ~180 MB |
+| Y2 | 2,400 | 50 | 1,200,000 | ~360 MB |
+| Y3 | 3,600 | 50 | 1,800,000 | ~540 MB |
+| Y5 | 6,000 | 50 | 3,000,000 | ~900 MB |
 
 **Conclusion**: Very manageable, no partitioning needed for 5+ years.
 
@@ -570,14 +591,11 @@ This schema can be visualized using:
 
 | Version | Date | Changes | Migration File |
 |---------|------|---------|----------------|
-| 1.0.0 | 2026-02-05 | Initial schema | `2014_10_12_000000_create_users_table.php` |
-| 1.0.0 | 2026-02-05 | Products table | `YYYY_MM_DD_HHMMSS_create_products_table.php` |
-| 1.0.0 | 2026-02-05 | Lines table | `YYYY_MM_DD_HHMMSS_create_lines_table.php` |
-| 1.0.0 | 2026-02-05 | Defect types | `YYYY_MM_DD_HHMMSS_create_defect_types_table.php` |
-| 1.0.0 | 2026-02-05 | Components | `YYYY_MM_DD_HHMMSS_create_components_table.php` |
-| 1.0.0 | 2026-02-05 | Daily targets | `YYYY_MM_DD_HHMMSS_create_daily_targets_table.php` |
-| 1.0.0 | 2026-02-05 | Inspections | `YYYY_MM_DD_HHMMSS_create_inspections_table.php` |
-| 1.1.0 | 2026-02-05 | Performance indexes | `2026_02_05_043408_add_performance_indexes_to_tables.php` |
+| 1.0.0 | 2026-02-05 | Initial schema (users, products, lines, defect_types, components) | `2026_02_05_*_create_*.php` |
+| 1.0.0 | 2026-02-05 | Daily targets & inspections tables | `2026_02_05_003712_create_inspections_table.php` |
+| 1.1.0 | 2026-02-05 | Performance indexes (composite + FK indexes) | `2026_02_05_043408_add_performance_indexes_to_tables.php` |
+| 1.2.0 | 2026-02-12 | Quantity tracking: `inspection_hour`, `total_quantity`, `issue_type`, `issue_quantity`, `ok_quantity` (virtual) | `2026_02_12_155432_add_quantity_and_issue_fields_to_inspections.php` |
+| 1.2.0 | 2026-02-12 | Additional performance indexes for quantity & hour columns | `2026_02_12_165125_add_performance_indexes_to_inspections_table.php` |
 
 ---
 
@@ -596,11 +614,12 @@ This schema can be visualized using:
 
 ---
 
-**Schema Version**: 1.1.0  
-**Last Updated**: 2026-02-05  
-**Database Size**: ~150 MB (Y1 estimate)  
+**Schema Version**: 1.2.0  
+**Last Updated**: 2026-02-19  
+**Database Size**: ~180 MB (Y1 estimate)  
 **Total Tables**: 12  
-**Total Indexes**: 25+  
-**Total Foreign Keys**: 6
+**Total Indexes**: 27+  
+**Total Foreign Keys**: 6  
+**Generated Columns**: 1 (`ok_quantity` stored generated)
 
 ✅ **Production Ready!**

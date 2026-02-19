@@ -6,6 +6,7 @@
 [![Laravel](https://img.shields.io/badge/Laravel-10.x-red?style=flat-square)](https://laravel.com)
 [![Filament](https://img.shields.io/badge/Filament-3.x-yellow?style=flat-square)](https://filamentphp.com)
 [![PHP](https://img.shields.io/badge/PHP-8.1+-blue?style=flat-square)](https://php.net)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0+-orange?style=flat-square)](https://mysql.com)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
 ---
@@ -42,20 +43,24 @@ QC Monitoring System adalah aplikasi berbasis web untuk **tracking dan monitorin
 ### 3. QC Inspections 🔍
 - **Quick Inspection**: Form cepat dengan conditional fields
 - **Pass/Reject**: Status otomatis menentukan field yang ditampilkan
-- **Defect Recording**: Capture tipe defect, component, dan notes
+- **Quantity Tracking**: Input total quantity, issue quantity; OK quantity dihitung otomatis
+- **Defect Recording**: Capture tipe defect, komponen, issue type, dan notes
+- **Hourly Tracking**: Pencatatan jam inspeksi untuk analitik per jam
 - **Date Validation**: Prevent future dating
 - **Inspector Tracking**: Automatic user assignment
 
 ### 4. Reporting & Analytics 📈
 - Filter by date range, product, line, status
-- Export capabilities (future enhancement)
+- **Export Excel**: Download laporan inspeksi dalam format `.xlsx` ✅
+- **Export PDF**: Download laporan dalam format PDF ✅
 - Search functionality across all resources
 - Column sorting dan pagination
+- **Hourly Defect Table**: Widget analitik defect per jam
 
 ### 5. User & Permissions 👥
 - **Spatie Permission**: Role-based access control
 - **Roles**: Super Admin, Admin, Inspector, Viewer
-- **Authentication**: Laravel Sanctum
+- **Authentication**: Filament built-in authentication
 - **User Management**: Filament Shield integration
 
 ---
@@ -67,10 +72,11 @@ QC Monitoring System adalah aplikasi berbasis web untuk **tracking dan monitorin
 | **Backend Framework** | Laravel | 10.x | Core application |
 | **Admin Panel** | Filament | 3.2+ | UI & CRUD operations |
 | **Database** | MySQL | 8.0+ | Data persistence |
-| **Authentication** | Laravel Sanctum | 3.2+ | API authentication |
-| **Permissions** | Spatie Laravel Permission | 5.11 | RBAC |
+| **Permissions** | Spatie Laravel Permission | 6.x | RBAC |
 | **Frontend** | Livewire | 3.x | Reactive components |
 | **UI Components** | Tailwind CSS | 3.x | Styling |
+| **Excel Export** | Maatwebsite Excel | 3.x | .xlsx exports |
+| **PDF Export** | barryvdh/laravel-dompdf | 2.x | PDF generation |
 
 ---
 
@@ -94,7 +100,14 @@ defect_types ──> inspections
 components ──> inspections
 ```
 
-📄 **Full Schema**: See [`database_schema.md`](.gemini/antigravity/brain/.../database_schema.md)
+**inspections table — key columns**:
+```
+inspection_date, inspection_hour, product_id, line_id, status, inspector_id
+total_quantity, issue_quantity, ok_quantity (STORED GENERATED), issue_type
+defect_type_id (nullable), component_id (nullable), notes
+```
+
+📄 **Full Schema**: See [SCHEMA.md](SCHEMA.md)
 
 ---
 
@@ -328,10 +341,13 @@ php artisan test --testsuite=Feature
 - [x] **Multi-language support** - 100% Indonesian UI (Sprint 11)
 - [x] **Query result caching** - CacheHelper implementation (Sprint 10)
 - [x] **Performance optimization** - 95% improvement from baseline (Sprint 9-10)
+- [x] **Export to Excel** - `InspectionExport` via Maatwebsite Excel (Sprint 12)
+- [x] **Export to PDF** - barryvdh/laravel-dompdf integration (Sprint 12)
+- [x] **Quantity tracking** - total/issue/ok quantity per inspection (Sprint 12)
+- [x] **Hourly analytics** - `HourlyDefectTable` widget (Sprint 12)
 
 ### Planned
-- [ ] Export to Excel/PDF
-- [ ] Advanced reporting (monthly summaries)
+- [ ] Advanced reporting (pre-aggregated monthly/yearly summaries)
 - [ ] Email notifications for critical defects
 - [ ] Mobile responsive improvements
 - [ ] Real-time dashboard updates (Livewire polling)

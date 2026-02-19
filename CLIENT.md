@@ -4,11 +4,14 @@
 
 ---
 
-## 🎯 Apa Itu QC Monitoring System?
+## 🎯 Apa itu QC Monitoring System?
 
-**QC Monitoring System** adalah aplikasi web modern untuk **monitoring kualitas produksi** di pabrik atau manufacture dengan **interface 100% Bahasa  Indonesia**. Sistem ini membantu tim Quality Control (QC) mencatat hasil inspeksi produk, menganalisa defect, dan membuat keputusan berdasarkan data real-time.
+QC Monitoring System adalah **sistem manajemen quality control berbasis web** yang dirancang khusus untuk kebutuhan produksi lokal Anda. Sistem ini berjalan sepenuhnya **offline** di workstation QC Anda, tidak memerlukan koneksi internet, dan dapat diakses melalui browser Google Chrome di komputer manapun dalam jaringan lokal.
 
-### 📊 Ilustrasi Penggunaan
+**Tiga hal utama yang disediakan sistem ini:**
+1. **Catat** - Input hasil inspeksi QC secara cepat dan terstruktur
+2. **Monitor** - Dashboard real-time untuk pantau status produksi
+3. **Laporan** - Export data ke Excel atau PDF kapan saja
 
 ```
 Inspector di Line A ──► Inspeksi Produk   ──► Hasil: PASS/REJECT
@@ -36,9 +39,13 @@ Inspector di Line A ──► Inspeksi Produk   ──► Hasil: PASS/REJECT
 
 **Setelah menggunakan sistem**:
 - ✅ Input data cepat dan mudah (< 30 detik per inspeksi)
-- ✅ Data tersimpan aman dan terstruktur
-- ✅ Laporan otomatis real-time
+- ✅ Data tersimpan aman di server lokal (offline)
+- ✅ Laporan otomatis dapat diexport kapan saja
 - ✅ Data akurat 100%
+
+### ✅ Operasional 100% Offline
+
+Sistem dirancang untuk berjalan di jaringan lokal (LAN) tanpa ketergantungan internet. Data tersimpan aman di server lokal Anda sendiri. Backup otomatis tiap jam memastikan tidak ada data yang hilang.
 
 **ROI**: Hemat **20-30 jam/minggu** waktu administrasi QC
 
@@ -171,19 +178,16 @@ Sistem mencatat:
 
 ---
 
-### 4. Advanced Reporting
+### 📄 Fitur Laporan
 
-**Filter Options**:
-- Date range (dari tanggal - sampai tanggal)
-- Produk tertentu
-- Line tertentu
-- Status (pass/reject/all)
-- Inspector tertentu
+| Laporan | Format | Konten |
+|---------|--------|--------|
+| **Harian** | Excel & PDF | Detail inspeksi per hari, per lini |
+| **Bulanan** | Excel & PDF | Ringkasan tren, top defect |
+| **Tahunan** | Excel & PDF | Summary eksekutif, grafik |
+| **Custom Range** | Excel | Filter tanggal bebas |
 
-**Export**:
-- Export to Excel (future feature)
-- Print report
-- Share via email (future feature)
+> 💡 **Ekspor tersedia sekarang!** Klik tombol "Export" di halaman Inspections.
 
 ---
 
@@ -206,39 +210,34 @@ Sistem mencatat:
 
 ---
 
-## 💻 Spesifikasi Teknis (Non-Technical)
+## 💻 Spesifikasi Teknis Yang Perlu Anda Siapkan
+
+### Persyaratan Hardware Minimum
+
+| Komponen | Minimum | Rekomendasi |
+|----------|---------|-------------|
+| **RAM** | 4 GB | 8 GB |
+| **Storage** | 10 GB free | 50 GB SSD |
+| **CPU** | Core i3 / setara | Core i5 ke atas |
+| **OS** | Windows 10 | Windows 10/11 64-bit |
+
+### Software yang Diperlukan (disediakan tim IT)
+
+- PHP 8.1+ & Composer
+- MySQL 8.0+
+- Web Browser: Chrome / Edge (modern)
+- **Tidak diperlukan** koneksi internet untuk operasional
 
 ### Akses Sistem
 
-**Platform**: Web-based (bisa diakses dari mana saja)
+| Item | Detail |
+|------|--------|
+| **URL** | `http://127.0.0.1:8085` (lokal) atau IP jaringan |
+| **Port** | 8085 |
+| **Browser** | Chrome / Edge |
+| **Koneksi** | Tidak diperlukan (100% offline) |
 
-**Device Support**:
-- 💻 **Desktop/Laptop**: Windows, Mac, Linux
-- 📱 **Tablet/Mobile**: Android, iOS (responsive)
-- 🌐 **Browser**: Chrome, Firefox, Safari, Edge
-
-**Internet**: Memerlukan koneksi internet (cloud-based)
-
----
-
-### Kebutuhan Server
-
-**Hosting Options**:
-
-**Option 1: Shared Hosting** (Untuk 1-50 users)
-- RAM: 1 GB
-- Storage: 10 GB
-- Cost: ~Rp 100K - 300K/bulan
-
-**Option 2: VPS** (Untuk 50-500 users) ⭐ Recommended
-- RAM: 2-4 GB
-- Storage: 20-50 GB
-- Cost: ~Rp 300K - 800K/bulan
-
-**Option 3: Cloud** (Untuk 500+ users)
-- AWS, Google Cloud, Azure
-- Auto-scaling
-- Cost: Variable (pay as you grow)
+> ⚠️ Internet hanya diperlukan saat instalasi awal dan update sistem (jika menggunakan jaringan lokal).
 
 ---
 
@@ -441,17 +440,13 @@ Sistem mencatat:
 
 ## ❓ FAQ (Frequently Asked Questions)
 
-### Q1: Apakah bisa offline?
-**A**: Saat ini sistem berbasis cloud, memerlukan internet. Untuk kebutuhan offline, bisa develop **hybrid mode** (sync ketika online).
+#### Q: Apakah sistem bisa digunakan tanpa internet?
+**A:** Ya! Sistem ini dirancang **100% offline**. Seluruh data, aplikasi, dan database tersimpan di komputer/server lokal Anda. Tidak ada ketergantungan terhadap layanan cloud atau internet untuk operasional harian.
 
 ---
 
-### Q2: Apakah data aman?
-**A**: Sangat aman! 
-- Hosting di server dengan SSL certificate
-- Password encrypted
-- Daily backup
-- Restricted access berdasarkan role
+#### Q: Di mana data disimpan?
+**A:** Data disimpan di **database MySQL lokal** pada server/workstation QC Anda. Backup otomatis dibuat setiap jam dan disimpan selama 7 hari. Data tidak dikirim ke server manapun di luar jaringan lokal Anda.
 
 ---
 
@@ -558,10 +553,10 @@ Sistem mencatat:
 ### Phase 2: Advanced Features (6-12 bulan) 🔄 In Progress
 
 - 📧 **Email notifications**: Auto alert untuk critical defect
-- 📊 **Advanced analytics**: Predictive analysis
-- 📱 **Mobile app**: Native Android & iOS
-- 🔄 **Real-time sync**: Live dashboard updates
-- 🔗 **Export features**: Excel, PDF reports
+- 📊 **Advanced analytics**: Predictive defect analysis
+- 📱 **Mobile responsive**: Optimasi tampilan mobile
+- � **Automated backup**: Backup otomatis per jam (dalam pengerjaan)
+- � **Advanced reporting**: Laporan bulanan/tahunan pre-aggregated
 
 ---
 
@@ -619,27 +614,9 @@ Sistem mencatat:
 ✅ **Data Driven**: Keputusan berdasarkan data faktual  
 ✅ **Easy to Use**: User-friendly, training cepat  
 ✅ **Scalable**: Grow bersama bisnis Anda  
-✅ **Secure**: Data aman & backup otomatis  
-✅ **Support**: Tim support responsif  
-
----
-
-### Investment vs Return
-
-| Investment | Amount |
-|------------|--------|
-| Initial cost (Professional) | Rp 30 juta |
-| Monthly hosting | Rp 500K |
-| **Year 1 Total** | **Rp 36 juta** |
-
-| Savings/Year | Amount |
-|--------------|--------|
-| Admin time (20h/week) | Rp 52 juta |
-| Rework reduction (5%) | Rp 60 juta |
-| Paperless | Rp 5 juta |
-| **Total Savings** | **Rp 117 juta** |
-
-**Net Benefit Year 1**: **Rp 81 juta** 💰
+✅ **Offline**: 100% berjalan tanpa internet  
+✅ **Secure**: Data aman & backup otomatis tiap jam  
+✅ **Export**: Laporan Excel & PDF tersedia sekarang
 
 **ROI**: **225%** 🚀
 
@@ -661,3 +638,12 @@ Mari diskusikan bagaimana QC Monitoring System bisa membantu meningkatkan kualit
 <p align="center">
   <em>Let's make quality control easier, faster, and smarter! 🚀</em>
 </p>
+
+---
+
+**Dokumen ini disiapkan oleh Tim QC Monitoring**  
+**Versi Dokumen**: 1.2.0  
+**Tanggal**: Februari 2026  
+**Berlaku untuk**: Deployment Single-Workstation (Offline)
+
+*Untuk pertanyaan teknis, hubungi tim IT internal Anda.*

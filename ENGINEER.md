@@ -375,7 +375,34 @@ $passedToday = Inspection::whereDate('inspection_date', today())
 
 ### Filament Resources
 
-**Location**: `app/Filament/Resources/`
+**Location**: `app/`
+├── Filament/
+│   ├── Resources/
+│   │   ├── ProductResource.php
+│   │   ├── LineResource.php
+│   │   ├── InspectionResource.php       # CORE: with quantity fields
+│   │   ├── DefectTypeResource.php
+│   │   ├── ComponentResource.php
+│   │   └── DailyTargetResource.php
+│   └── Widgets/
+│       ├── StatsOverviewWidget.php      # Dashboard KPI cards
+│       ├── InspectionChart.php          # Daily inspection trend
+│       ├── DefectChart.php              # Defect distribution
+│       └── HourlyDefectTable.php        # Hourly analytics widget ✅
+├── Exports/
+│   ├── InspectionExport.php             # Excel export (Maatwebsite) ✅
+│   └── InspectionPdfExport.php          # PDF export (DomPDF) ✅
+├── Models/
+│   ├── User.php
+│   ├── Product.php
+│   ├── Line.php
+│   ├── Inspection.php                   # CORE: quantity validation logic
+│   ├── DefectType.php
+│   ├── Component.php
+│   └── DailyTarget.php
+└── Providers/
+    └── Filament/
+        └── AdminPanelProvider.php
 
 **Anatomy of a Resource**:
 ```php
@@ -808,7 +835,7 @@ Before deploying to production:
 - [ ] No `SELECT *` queries in critical paths
 - [ ] Eager loading used for relationships
 - [ ] No N+1 queries (check with Telescope)
-- [ ] Cache driver configured (Redis/Memcached for prod)
+- [ ] Cache driver configured (`file` for offline, Redis for networked)
 
 ---
 
@@ -891,25 +918,22 @@ php artisan test --parallel
 
 ### Production Checklist
 
-**1. Environment Configuration**:
+**1. Environment Configuration (Offline/Local)**:
 ```env
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=https://yourdomain.com
+APP_URL=http://127.0.0.1:8085
 
 DB_CONNECTION=mysql
-DB_HOST=production-db-host
-DB_DATABASE=qc_monitoring_prod
-DB_USERNAME=prod_user
-DB_PASSWORD=strong_password
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=qc_monitoring
+DB_USERNAME=root
+DB_PASSWORD=your_password
 
-CACHE_DRIVER=redis
-SESSION_DRIVER=redis
-QUEUE_CONNECTION=redis
-
-REDIS_HOST=127.0.0.1
-REDIS_PASSWORD=null
-REDIS_PORT=6379
+CACHE_DRIVER=file
+SESSION_DRIVER=file
+QUEUE_CONNECTION=sync
 ```
 
 **2. Optimization Commands**:
@@ -1100,90 +1124,67 @@ tail -f storage/logs/laravel.log
 
 ---
 
-### Phase 2: Next Steps (Q1 2026)
+### Phase 2: Next Steps (Q2 2026)
 
-#### A. Query Result Caching
+#### A. Advanced Pre-aggregated Reporting
 
-**Objective**: Reduce database load by 70%
-
-**Implementation**:
-1. Redis setup for cache driver
-2. Cache dashboard widgets (5-10 min TTL)
-3. Cache invalidation on data changes
-4. Monitor cache hit ratio
-
-**Expected Gain**: 80-95% faster (on cache hits)
-
-**Effort**: 2-3 hours
-
----
-
-#### B. Advanced Reporting
-
-**Objective**: Monthly/yearly summaries without performance hit
+**Objective**: Laporan bulanan/tahunan tanpa performance hit
 
 **Implementation**:
 1. Create `inspection_summaries` table (pre-aggregated data)
-2. Daily cron job to aggregate
-3. Reporting API endpoints
-4. Export to Excel/PDF
+2. Daily cron job to aggregate (via Laravel scheduler)
+3. Excel/PDF report enhancements: charts, summary statistics
+4. Custom date-range reporting with filters
 
 **Effort**: 4-6 hours
 
 ---
 
-#### C. Real-Time Dashboard
+#### B. Automated Backup System
 
-**Objective**: Live updates without page refresh
+**Objective**: Zero-data-loss offline system
 
 **Implementation**:
-1. Laravel Echo + Pusher
-2. Broadcast inspection events
-3. Livewire polling (fallback)
+1. Spatie Laravel Backup package
+2. Hourly MySQL dump + gzip compression
+3. 7-day retention policy
+4. Backup status dashboard widget
 
-**Effort**: 3-4 hours
+**Effort**: 2-3 hours
 
 ---
 
-### Phase 3: Scale Planning (Q2-Q3 2026)
+### Phase 3: Scale Planning (Q3-Q4 2026)
 
-#### A. Horizontal Scaling
+#### A. Network Update Distribution
 
-**When**: >500 concurrent users OR >1M inspections/year
+**When**: System ready for multi-workstation support
 
 **Actions**:
-- Load balancer (Nginx/HAProxy)
-- Multiple app servers
-- Redis Cluster
-- MySQL Read replicas
+- Share update package via network share (UNC path)
+- `version.json` manifest for version checking
+- Automated update checker in application
+- Rollback mechanism
 
 ---
 
-#### B. Database Partitioning
+#### B. Multi-Line Support
 
-**When**: >10M records in inspections table
+**When**: Multiple production lines need separate QC workstations
 
 **Strategy**:
-```sql
--- Partition by year
-ALTER TABLE inspections
-PARTITION BY RANGE (YEAR(inspection_date)) (
-    PARTITION p2024 VALUES LESS THAN (2025),
-    PARTITION p2025 VALUES LESS THAN (2026),
-    PARTITION p2026 VALUES LESS THAN (2027),
-    PARTITION p_future VALUES LESS THAN MAXVALUE
-);
-```
+- Separate MySQL databases or schemas per line
+- Central aggregation server
+- Read replica for reporting
 
 ---
 
-#### C. Advanced Optimizations
+#### C. Performance Scaling
 
-1. **CDN** for static assets
-2. **Queue Workers** for heavy reports
-3. **ElasticSearch** for full-text search
-4. **GraphQL API** for mobile apps
-5. **Database Sharding** (if multi-tenant)
+1. **Redis Cache** for high-frequency data
+2. **Queue Workers** for report generation
+3. **Database Partitioning** for inspections > 5M records
+4. **Migration to PostgreSQL** (better GENERATED column support)
 
 ---
 
@@ -1295,15 +1296,16 @@ This system is designed for **performance**, **scalability**, and **maintainabil
 5. **Test rigorously** - don't break production
 
 **Current Status**: ✅ **Production Ready**
-- Performance: 92% optimized
+- Performance: 95% optimized (3000ms → 150ms)
+- Export: Excel ✅ & PDF ✅ implemented
 - Code Quality: Enterprise-grade
-- Security: Laravel best practices
-- Scalability: Supports 100K+ inspections/year
+- Security: Laravel best practices applied
+- Scalability: Optimized for single-workstation, 20K+ inspections/year
 
 ---
 
-**Last Updated**: 2026-02-05  
-**Version**: 1.0  
+**Last Updated**: 2026-02-19  
+**Version**: 1.2.0  
 **Author**: Development Team  
 
 🚀 **Happy Coding!**
