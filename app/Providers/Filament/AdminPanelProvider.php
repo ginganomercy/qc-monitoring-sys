@@ -28,6 +28,8 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->brandName('QC Monitoring')
+            ->brandLogo(asset('images/logo-poltek.png'))
+            ->brandLogoHeight('2.5rem')
             ->favicon(asset('favicon.ico'))
             ->colors([
                 'primary' => Color::Amber,
