@@ -1,606 +1,367 @@
-# 🗄️ DATABASE SCHEMA - QC Monitoring System
+# 🗄️ DATABASE SCHEMA — QC Monitoring System
 
-**Version**: 1.0  
-**Database**: MySQL 8.0.44  
-**Charset**: utf8mb4_unicode_ci  
-**Collation**: utf8mb4_unicode_ci  
-**Engine**: InnoDB
+**Version**: 1.2
+**Database**: `qc_monitorr`
+**Engine**: MySQL 8.0+ / MariaDB 10.3+
+**Charset**: utf8mb4_unicode_ci
+**Last Updated**: 2026-03-02
 
 ---
 
 ## 📊 Entity Relationship Diagram (ERD)
 
-### High-Level Overview
-
 ```mermaid
 erDiagram
-    USERS ||--o{ INSPECTIONS : "creates"
-    USERS ||--o{ ROLES : "has"
-    ROLES ||--o{ PERMISSIONS : "contains"
-    
+    USERS ||--o{ INSPECTIONS : "creates (inspector)"
+
     PRODUCTS ||--o{ INSPECTIONS : "inspected_in"
-    LINES ||--o{ INSPECTIONS : "inspected_on"
-    LINES ||--o{ DAILY_TARGETS : "has_target"
-    
-    DEFECT_TYPES ||--o{ INSPECTIONS : "classified_as"
-    COMPONENTS ||--o{ INSPECTIONS : "affected_in"
-    
+    LINES    ||--o{ INSPECTIONS : "inspected_on"
+    LINES    ||--o{ DAILY_TARGETS : "has_target"
+
+    DEFECT_TYPES ||--o{ INSPECTIONS : "classified_as (nullable)"
+    COMPONENTS   ||--o{ INSPECTIONS : "affected_in (nullable)"
+
     USERS {
         bigint id PK
         string name
         string email UK
         timestamp email_verified_at
         string password
-        string remember_token
         timestamp created_at
         timestamp updated_at
     }
-    
+
     PRODUCTS {
         bigint id PK
-        string style_number UK "Unique product code"
+        string style_number UK
         text description
-        boolean is_active "Default: true"
+        boolean is_active
         timestamp created_at
         timestamp updated_at
     }
-    
+
     LINES {
         bigint id PK
-        string code UK "e.g., LINE-A"
-        string name "Display name"
-        boolean is_active "Default: true"
+        string code UK
+        string name
+        boolean is_active
         timestamp created_at
         timestamp updated_at
     }
-    
+
     DEFECT_TYPES {
         bigint id PK
         string code UK
         string name
-        enum severity "low|medium|high|critical"
-        boolean is_active "Default: true"
+        enum severity
+        boolean is_active
         timestamp created_at
         timestamp updated_at
     }
-    
+
     COMPONENTS {
         bigint id PK
         string name UK
-        boolean is_active "Default: true"
+        boolean is_active
         timestamp created_at
         timestamp updated_at
     }
-    
+
     DAILY_TARGETS {
         bigint id PK
         bigint line_id FK
-        date target_date "Unique per line"
-        integer target_quantity "Must be > 0"
+        date target_date
+        int target_quantity
         timestamp created_at
         timestamp updated_at
     }
-    
+
     INSPECTIONS {
         bigint id PK
         date inspection_date
         bigint product_id FK
         bigint line_id FK
-        enum status "pass|reject"
-        bigint defect_type_id FK "nullable, required if reject"
-        bigint component_id FK "nullable"
-        text notes "nullable"
+        enum status
+        bigint defect_type_id FK
+        bigint component_id FK
+        text notes
         bigint inspector_id FK
         timestamp created_at
         timestamp updated_at
     }
-    
-    ROLES {
-        bigint id PK
-        string name UK
-        string guard_name
-        timestamp created_at
-        timestamp updated_at
-    }
-    
-    PERMISSIONS {
-        bigint id PK
-        string name UK
-        string guard_name
-        timestamp created_at
-        timestamp updated_at
-    }
 ```
+
+> ℹ️ **Catatan**: Tidak ada tabel Spatie Permission (roles, permissions, pivot). RBAC belum diimplementasikan.
 
 ---
 
-## 📋 Complete Table Specifications
+## 📋 Table Specifications
 
-### 1. users
+### 1. `users`
 
-**Purpose**: User authentication and inspector management
+**Purpose**: Autentikasi dan manajemen inspector
 
-| Column | Type | Length | Null | Default | Key | Extra | Description |
-|--------|------|--------|------|---------|-----|-------|-------------|
-| `id` | BIGINT UNSIGNED | - | NO | - | PRI | AUTO_INCREMENT | Primary key |
-| `name` | VARCHAR | 255 | NO | - | - | - | Inspector full name |
-| `email` | VARCHAR | 255 | NO | - | UNI | - | Login email (unique) |
-| `email_verified_at` | TIMESTAMP | - | YES | NULL | - | - | Email verification time |
-| `password` | VARCHAR | 255 | NO | - | - | - | Bcrypt hashed password |
-| `remember_token` | VARCHAR | 100 | YES | NULL | - | - | Session remember token |
-| `created_at` | TIMESTAMP | - | YES | NULL | - | - | Record creation time |
-| `updated_at` | TIMESTAMP | - | YES | NULL | - | - | Last update time |
-
-**Indexes**:
-```sql
-PRIMARY KEY (`id`)
-UNIQUE KEY `users_email_unique` (`email`)
-```
+| Column | Type | Null | Key | Description |
+|--------|------|------|-----|-------------|
+| `id` | BIGINT UNSIGNED | NO | PRI | Auto increment |
+| `name` | VARCHAR(255) | NO | - | Nama lengkap inspector |
+| `email` | VARCHAR(255) | NO | UNI | Email login (unique) |
+| `email_verified_at` | TIMESTAMP | YES | - | Waktu verifikasi email |
+| `password` | VARCHAR(255) | NO | - | Bcrypt hash |
+| `remember_token` | VARCHAR(100) | YES | - | Session token |
+| `created_at` | TIMESTAMP | YES | - | Dibuat |
+| `updated_at` | TIMESTAMP | YES | - | Diperbarui |
 
 **Business Rules**:
-- Email must be valid and unique
-- Password minimum 8 characters (enforced by Filament)
-- Cannot delete user if has inspection records
+- Email harus unik
+- Password min 8 karakter (enforced Filament)
+- Tidak bisa dihapus jika punya record inspeksi
 
 ---
 
-### 2. products
+### 2. `products`
 
-**Purpose**: Product master data (style numbers)
+**Purpose**: Master data produk (style numbers)
 
-| Column | Type | Length | Null | Default | Key | Extra | Description |
-|--------|------|--------|------|---------|-----|-------|-------------|
-| `id` | BIGINT UNSIGNED | - | NO | - | PRI | AUTO_INCREMENT | Primary key |
-| `style_number` | VARCHAR | 100 | NO | - | UNI | - | Unique product identifier |
-| `description` | TEXT | - | YES | NULL | - | - | Product description/details |
-| `is_active` | TINYINT(1) | - | NO | 1 | MUL | - | Active status (1=active, 0=inactive) |
-| `created_at` | TIMESTAMP | - | YES | NULL | - | - | Record creation time |
-| `updated_at` | TIMESTAMP | - | YES | NULL | - | - | Last update time |
-
-**Indexes**:
-```sql
-PRIMARY KEY (`id`)
-UNIQUE KEY `products_style_number_unique` (`style_number`)
-INDEX `products_is_active_index` (`is_active`)
-```
+| Column | Type | Null | Key | Description |
+|--------|------|------|-----|-------------|
+| `id` | BIGINT UNSIGNED | NO | PRI | Auto increment |
+| `style_number` | VARCHAR(100) | NO | UNI | Kode produk unik |
+| `description` | TEXT | YES | - | Deskripsi produk |
+| `is_active` | TINYINT(1) | NO | MUL | Default: 1 (aktif) |
+| `created_at` | TIMESTAMP | YES | - | - |
+| `updated_at` | TIMESTAMP | YES | - | - |
 
 **Business Rules**:
-- `style_number` cannot be changed once set (enforced by application)
-- Cannot delete if referenced by inspections (soft delete recommended)
-- Only active products shown in inspection forms
+- `style_number` tidak bisa diubah setelah ada inspeksi
+- Hanya produk aktif yang tampil di form inspeksi
 
 ---
 
-### 3. lines
+### 3. `lines`
 
-**Purpose**: Production line master data
+**Purpose**: Master data production line
 
-| Column | Type | Length | Null | Default | Key | Extra | Description |
-|--------|------|--------|------|---------|-----|-------|-------------|
-| `id` | BIGINT UNSIGNED | - | NO | - | PRI | AUTO_INCREMENT | Primary key |
-| `code` | VARCHAR | 50 | NO | - | UNI | - | Line code (e.g., LINE-A, LINE-B) |
-| `name` | VARCHAR | 255 | NO | - | - | - | Display name |
-| `is_active` | TINYINT(1) | - | NO | 1 | MUL | - | Active status |
-| `created_at` | TIMESTAMP | - | YES | NULL | - | - | Record creation time |
-| `updated_at` | TIMESTAMP | - | YES | NULL | - | - | Last update time |
-
-**Indexes**:
-```sql
-PRIMARY KEY (`id`)
-UNIQUE KEY `lines_code_unique` (`code`)
-INDEX `lines_is_active_index` (`is_active`)
-```
+| Column | Type | Null | Key | Description |
+|--------|------|------|-----|-------------|
+| `id` | BIGINT UNSIGNED | NO | PRI | Auto increment |
+| `code` | VARCHAR(50) | NO | UNI | Kode line (e.g. LINE-A) |
+| `name` | VARCHAR(255) | NO | - | Nama tampilan |
+| `is_active` | TINYINT(1) | NO | MUL | Default: 1 |
+| `created_at` | TIMESTAMP | YES | - | - |
+| `updated_at` | TIMESTAMP | YES | - | - |
 
 **Business Rules**:
-- Code must be uppercase and unique
-- Cannot delete if has inspections or targets
-- Only active lines shown in forms
+- Kode harus unik dan uppercase
+- Cascade delete ke `daily_targets` jika line dihapus
 
 ---
 
-### 4. defect_types
+### 4. `defect_types`
 
-**Purpose**: Defect classification and severity levels
+**Purpose**: Klasifikasi dan tingkat keparahan defect
 
-| Column | Type | Length | Null | Default | Key | Extra | Description |
-|--------|------|--------|------|---------|-----|-------|-------------|
-| `id` | BIGINT UNSIGNED | - | NO | - | PRI | AUTO_INCREMENT | Primary key |
-| `code` | VARCHAR | 50 | NO | - | UNI | - | Defect code |
-| `name` | VARCHAR | 255 | NO | - | MUL | - | Defect name |
-| `severity` | ENUM | - | NO | 'medium' | MUL | - | Values: low, medium, high, critical |
-| `is_active` | TINYINT(1) | - | NO | 1 | MUL | - | Active status |
-| `created_at` | TIMESTAMP | - | YES | NULL | - | - | Record creation time |
-| `updated_at` | TIMESTAMP | - | YES | NULL | - | - | Last update time |
-
-**Indexes**:
-```sql
-PRIMARY KEY (`id`)
-UNIQUE KEY `defect_types_code_unique` (`code`)
-INDEX `defect_types_name_index` (`name`)
-INDEX `defect_types_severity_index` (`severity`)
-INDEX `defect_types_is_active_index` (`is_active`)
-```
+| Column | Type | Null | Key | Description |
+|--------|------|------|-----|-------------|
+| `id` | BIGINT UNSIGNED | NO | PRI | Auto increment |
+| `code` | VARCHAR(50) | NO | UNI | Kode defect |
+| `name` | VARCHAR(255) | NO | MUL | Nama defect |
+| `severity` | ENUM | NO | MUL | `low`, `medium`, `high`, `critical` |
+| `is_active` | TINYINT(1) | NO | MUL | Default: 1 |
+| `created_at` | TIMESTAMP | YES | - | - |
+| `updated_at` | TIMESTAMP | YES | - | - |
 
 **Severity Levels**:
-| Level | Color Badge | Description | Example |
-|-------|-------------|-------------|---------|
-| `low` | 🟢 Gray | Minor cosmetic issues | Loose thread |
-| `medium` | 🟡 Warning | Moderate functional issues | Small stain |
-| `high` | 🟠 Danger | Major functional issues | Broken zipper |
-| `critical` | 🔴 Red | Product unusable | Multiple defects |
 
-**Business Rules**:
-- Code must be unique
-- Severity cannot be changed once defect records exist (data consistency)
-- Only active defect types shown in forms
+| Level | Warna | Contoh |
+|-------|-------|--------|
+| `low` | 🟢 | Benang longgar |
+| `medium` | 🟡 | Noda kecil |
+| `high` | 🟠 | Resleting rusak |
+| `critical` | 🔴 | Produk tidak bisa dipakai |
 
 ---
 
-### 5. components
+### 5. `components`
 
-**Purpose**: Product component master data
+**Purpose**: Master komponen produk
 
-| Column | Type | Length | Null | Default | Key | Extra | Description |
-|--------|------|--------|------|---------|-----|-------|-------------|
-| `id` | BIGINT UNSIGNED | - | NO | - | PRI | AUTO_INCREMENT | Primary key |
-| `name` | VARCHAR | 255 | NO | - | UNI | - | Component name (e.g., Sleeve, Collar) |
-| `is_active` | TINYINT(1) | - | NO | 1 | MUL | - | Active status |
-| `created_at` | TIMESTAMP | - | YES | NULL | - | - | Record creation time |
-| `updated_at` | TIMESTAMP | - | YES | NULL | - | - | Last update time |
+| Column | Type | Null | Key | Description |
+|--------|------|------|-----|-------------|
+| `id` | BIGINT UNSIGNED | NO | PRI | Auto increment |
+| `name` | VARCHAR(255) | NO | UNI | Nama komponen |
+| `is_active` | TINYINT(1) | NO | MUL | Default: 1 |
+| `created_at` | TIMESTAMP | YES | - | - |
+| `updated_at` | TIMESTAMP | YES | - | - |
 
-**Indexes**:
+Contoh: Sleeve, Collar, Button, Zipper, Pocket
+
+---
+
+### 6. `daily_targets`
+
+**Purpose**: Target inspeksi harian per line
+
+| Column | Type | Null | Key | Description |
+|--------|------|------|-----|-------------|
+| `id` | BIGINT UNSIGNED | NO | PRI | Auto increment |
+| `line_id` | BIGINT UNSIGNED | NO | MUL | FK → lines.id |
+| `target_date` | DATE | NO | MUL | Tanggal target |
+| `target_quantity` | INT UNSIGNED | NO | - | Jumlah target (>0) |
+| `created_at` | TIMESTAMP | YES | - | - |
+| `updated_at` | TIMESTAMP | YES | - | - |
+
+**Business Rules**:
+- Unique constraint: satu target per line per tanggal
+- `target_quantity` harus > 0
+- Cascade delete jika line dihapus
+
+---
+
+### 7. `inspections` ⭐ (Core Table)
+
+**Purpose**: Rekaman transaksi inspeksi kualitas
+
+| Column | Type | Null | Key | Description |
+|--------|------|------|-----|-------------|
+| `id` | BIGINT UNSIGNED | NO | PRI | Auto increment |
+| `inspection_date` | DATE | NO | MUL | Tanggal inspeksi |
+| `product_id` | BIGINT UNSIGNED | NO | MUL | FK → products.id |
+| `line_id` | BIGINT UNSIGNED | NO | MUL | FK → lines.id |
+| `status` | ENUM | NO | MUL | `pass` / `reject` |
+| `defect_type_id` | BIGINT UNSIGNED | YES | MUL | FK → defect_types.id (nullable) |
+| `component_id` | BIGINT UNSIGNED | YES | MUL | FK → components.id (nullable) |
+| `notes` | TEXT | YES | - | Catatan inspector |
+| `inspector_id` | BIGINT UNSIGNED | NO | MUL | FK → users.id |
+| `created_at` | TIMESTAMP | YES | MUL | - |
+| `updated_at` | TIMESTAMP | YES | - | - |
+
+**Indexes (14 total)**:
+
 ```sql
-PRIMARY KEY (`id`)
-UNIQUE KEY `components_name_unique` (`name`)
-INDEX `components_is_active_index` (`is_active`)
+PRIMARY KEY (id)
+
+-- Foreign keys
+INDEX idx_product_id (product_id)
+INDEX idx_line_id (line_id)
+INDEX idx_defect_type_id (defect_type_id)
+INDEX idx_component_id (component_id)
+INDEX idx_inspector_id (inspector_id)
+
+-- Performance indexes
+INDEX idx_inspection_date (inspection_date)
+INDEX idx_status (status)
+INDEX idx_created_at (created_at)
+
+-- Composite indexes (CRITICAL untuk dashboard)
+INDEX idx_status_date (status, inspection_date)
+INDEX idx_line_date (line_id, inspection_date)
 ```
 
 **Business Rules**:
-- Name must be unique (case-insensitive)
-- Cannot delete if referenced by inspections
-- Only active components shown in forms
+1. `status = 'pass'` → `defect_type_id` dan `component_id` harus NULL
+2. `status = 'reject'` → `defect_type_id` WAJIB diisi
+3. `inspection_date` tidak boleh tanggal masa depan
+4. `inspector_id` otomatis dari user yang sedang login
+
+**ON DELETE Policies**:
+
+| Parent | ON DELETE | Alasan |
+|--------|-----------|--------|
+| `products` | RESTRICT | Jaga data historis |
+| `lines` | RESTRICT | Jaga data historis |
+| `users` | RESTRICT | Jaga data inspector |
+| `defect_types` | SET NULL | Keep inspeksi, hilangkan klasifikasi |
+| `components` | SET NULL | Keep inspeksi, hilangkan komponen |
 
 ---
 
-### 6. daily_targets
-
-**Purpose**: Daily production targets per line
-
-| Column | Type | Length | Null | Default | Key | Extra | Description |
-|--------|------|--------|------|---------|-----|-------|-------------|
-| `id` | BIGINT UNSIGNED | - | NO | - | PRI | AUTO_INCREMENT | Primary key |
-| `line_id` | BIGINT UNSIGNED | - | NO | - | MUL | - | Reference to lines.id |
-| `target_date` | DATE | - | NO | - | MUL | - | Target date |
-| `target_quantity` | INT UNSIGNED | - | NO | - | - | - | Target units to produce |
-| `created_at` | TIMESTAMP | - | YES | NULL | - | - | Record creation time |
-| `updated_at` | TIMESTAMP | - | YES | NULL | - | - | Last update time |
-
-**Indexes**:
-```sql
-PRIMARY KEY (`id`)
-FOREIGN KEY (`line_id`) REFERENCES `lines` (`id`) ON DELETE CASCADE
-INDEX `daily_targets_line_id_index` (`line_id`)
-INDEX `daily_targets_target_date_index` (`target_date`)
-UNIQUE KEY `daily_targets_line_date_unique` (`line_id`, `target_date`)
-```
-
-**Business Rules**:
-- One target per line per date (enforced by unique constraint)
-- `target_quantity` must be > 0
-- Cannot set targets for past dates (application validation)
-- Cascade delete when line is deleted
-
----
-
-### 7. inspections ⭐ (CORE TABLE)
-
-**Purpose**: Quality inspection transaction records
-
-| Column | Type | Length | Null | Default | Key | Extra | Description |
-|--------|------|--------|------|---------|-----|-------|-------------|
-| `id` | BIGINT UNSIGNED | - | NO | - | PRI | AUTO_INCREMENT | Primary key |
-| `inspection_date` | DATE | - | NO | - | MUL | - | Date of inspection |
-| `product_id` | BIGINT UNSIGNED | - | NO | - | MUL | - | Reference to products.id |
-| `line_id` | BIGINT UNSIGNED | - | NO | - | MUL | - | Reference to lines.id |
-| `status` | ENUM | - | NO | - | MUL | - | Values: pass, reject |
-| `defect_type_id` | BIGINT UNSIGNED | - | YES | NULL | MUL | - | Reference to defect_types.id (nullable) |
-| `component_id` | BIGINT UNSIGNED | - | YES | NULL | MUL | - | Reference to components.id (nullable) |
-| `notes` | TEXT | - | YES | NULL | - | - | Additional inspector notes |
-| `inspector_id` | BIGINT UNSIGNED | - | NO | - | MUL | - | Reference to users.id |
-| `created_at` | TIMESTAMP | - | YES | NULL | MUL | - | Record creation time |
-| `updated_at` | TIMESTAMP | - | YES | NULL | - | - | Last update time |
-
-**Indexes** (14 total - CRITICAL for performance):
-```sql
--- Primary Key
-PRIMARY KEY (`id`)
-
--- Foreign Keys
-FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE RESTRICT
-FOREIGN KEY (`line_id`) REFERENCES `lines` (`id`) ON DELETE RESTRICT
-FOREIGN KEY (`defect_type_id`) REFERENCES `defect_types` (`id`) ON DELETE SET NULL
-FOREIGN KEY (`component_id`) REFERENCES `components` (`id`) ON DELETE SET NULL
-FOREIGN KEY (`inspector_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT
-
--- Single Column Indexes (fast WHERE clauses)
-INDEX `inspections_inspection_date_index` (`inspection_date`)
-INDEX `inspections_product_id_index` (`product_id`)
-INDEX `inspections_line_id_index` (`line_id`)
-INDEX `inspections_defect_type_id_index` (`defect_type_id`)
-INDEX `inspections_component_id_index` (`component_id`)
-INDEX `inspections_inspector_id_index` (`inspector_id`)
-INDEX `inspections_created_at_index` (`created_at`)
-
--- Composite Indexes (CRITICAL for dashboard performance)
-INDEX `inspections_status_date_index` (`status`, `inspection_date`)
-INDEX `inspections_line_date_index` (`line_id`, `inspection_date`)
-```
-
-**Business Rules**:
-1. **Status Logic**:
-   - If `status = 'pass'` → `defect_type_id` and `component_id` MUST be NULL
-   - If `status = 'reject'` → `defect_type_id` is REQUIRED
-
-2. **Date Validation**:
-   - `inspection_date` cannot be future date
-   - `inspection_date` cannot be > 30 days in past (configurable)
-
-3. **Data Integrity**:
-   - Cannot delete product/line/inspector if has inspections (RESTRICT)
-   - Deleting defect_type/component sets field to NULL (SET NULL)
-
-4. **Performance**:
-   - Composite index on `(status, inspection_date)` speeds up dashboard queries by 90%
-   - Composite index on `(line_id, inspection_date)` speeds up line reports by 85%
-
----
-
-### 8-12. Spatie Permission Tables
-
-#### 8. permissions
-
-| Column | Type | Length | Null | Default | Key | Extra |
-|--------|------|--------|------|---------|-----|-------|
-| `id` | BIGINT UNSIGNED | - | NO | - | PRI | AUTO_INCREMENT |
-| `name` | VARCHAR | 255 | NO | - | - | - |
-| `guard_name` | VARCHAR | 255 | NO | - | - | - |
-| `created_at` | TIMESTAMP | - | YES | NULL | - | - |
-| `updated_at` | TIMESTAMP | - | YES | NULL | - | - |
-
-**Index**: `UNIQUE (name, guard_name)`
-
----
-
-#### 9. roles
-
-| Column | Type | Length | Null | Default | Key | Extra |
-|--------|------|--------|------|---------|-----|-------|
-| `id` | BIGINT UNSIGNED | - | NO | - | PRI | AUTO_INCREMENT |
-| `name` | VARCHAR | 255 | NO | - | - | - |
-| `guard_name` | VARCHAR | 255 | NO | - | - | - |
-| `created_at` | TIMESTAMP | - | YES | NULL | - | - |
-| `updated_at` | TIMESTAMP | - | YES | NULL | - | - |
-
-**Index**: `UNIQUE (name, guard_name)`
-
-**Default Roles**:
-| Role | Permissions | Description |
-|------|-------------|-------------|
-| `super_admin` | ALL | Full system access |
-| `admin` | view, create, update, delete | Manage all data |
-| `inspector` | view, create (inspections only) | Create inspections only |
-| `viewer` | view | Read-only access |
-
----
-
-#### 10-12. Pivot Tables
-
-- `model_has_permissions`: Links users to permissions directly
-- `model_has_roles`: Links users to roles
-- `role_has_permissions`: Links roles to permissions
-
----
-
-## 🔗 Relationship Mapping
-
-### Parent → Child Relationships
+## 🔗 Relationship Overview
 
 ```
-users (1) ───────► (N) inspections
-  └─ One user (inspector) can create many inspections
+users (1) ──────► (N) inspections
 
-products (1) ─────► (N) inspections
-  └─ One product can have many inspection records
+products (1) ───► (N) inspections
 
-lines (1) ────────► (N) inspections
-  └─ One line can have many inspections
+lines (1) ──────► (N) inspections
+lines (1) ──────► (N) daily_targets
 
-lines (1) ────────► (N) daily_targets
-  └─ One line can have many daily targets (one per date)
-
-defect_types (1) ─► (N) inspections
-  └─ One defect type can appear in many inspections
-
-components (1) ───► (N) inspections
-  └─ One component can be defective in many inspections
-
-roles (1) ────────► (N) users (via model_has_roles)
-  └─ One role can be assigned to many users
-
-permissions (1) ──► (N) roles (via role_has_permissions)
-  └─ One permission can belong to many roles
+defect_types (1) ► (N) inspections [nullable]
+components (1) ──► (N) inspections [nullable]
 ```
-
-### Cascade Rules
-
-| Parent Table | Child Table | ON DELETE | Reason |
-|--------------|-------------|-----------|--------|
-| `lines` | `daily_targets` | CASCADE | Target irrelevant without line |
-| `products` | `inspections` | RESTRICT | Preserve historical data |
-| `lines` | `inspections` | RESTRICT | Preserve historical data |
-| `users` | `inspections` | RESTRICT | Preserve inspector records |
-| `defect_types` | `inspections` | SET NULL | Keep inspection, lose classification |
-| `components` | `inspections` | SET NULL | Keep inspection, lose component detail |
 
 ---
 
 ## 📈 Query Patterns & Index Usage
 
-### 1. Dashboard Stats (Most Frequent)
+### Dashboard Stats (Paling Sering)
 
-**Query**:
 ```sql
-SELECT COUNT(*) FROM inspections 
+SELECT COUNT(*) FROM inspections
 WHERE inspection_date = CURDATE() AND status = 'pass';
+-- Index: idx_status_date → ~5ms
 ```
 
-**Index Used**: `inspections_status_date_index (status, inspection_date)`  
-**Performance**: ~5ms (without index: ~500ms)
+### Line Performance Report
 
----
-
-### 2. Line Performance Report
-
-**Query**:
 ```sql
-SELECT COUNT(*) FROM inspections 
-WHERE line_id = 1 AND inspection_date BETWEEN '2026-02-01' AND '2026-02-28';
+SELECT COUNT(*) FROM inspections
+WHERE line_id = 1
+AND inspection_date BETWEEN '2026-02-01' AND '2026-02-28';
+-- Index: idx_line_date → ~8ms
 ```
 
-**Index Used**: `inspections_line_date_index (line_id, inspection_date)`  
-**Performance**: ~8ms (without index: ~800ms)
+### Top Defects Chart
 
----
-
-### 3. Top Defects Chart
-
-**Query**:
 ```sql
-SELECT defect_type_id, COUNT(*) as count 
-FROM inspections 
-WHERE status = 'reject' AND inspection_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-GROUP BY defect_type_id 
-ORDER BY count DESC 
-LIMIT 5;
+SELECT defect_type_id, COUNT(*) as count
+FROM inspections
+WHERE status = 'reject'
+AND inspection_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+GROUP BY defect_type_id
+ORDER BY count DESC LIMIT 5;
+-- Index: idx_status_date + idx_defect_type_id → ~12ms
 ```
-
-**Indexes Used**: 
-- `inspections_status_date_index` (for filtering)
-- `inspections_defect_type_id_index` (for grouping)
-
-**Performance**: ~12ms (without indexes: ~1200ms)
 
 ---
 
 ## 💾 Storage Estimation
 
-### Record Growth Projection
+| Tahun | Inspeksi | Estimasi DB |
+|-------|----------|-------------|
+| Y1 | 600.000 | ~150 MB |
+| Y2 | 1.200.000 | ~300 MB |
+| Y3 | 1.800.000 | ~450 MB |
+| Y5 | 3.000.000 | ~750 MB |
 
-| Year | Products | Lines | Inspections | Total Size |
-|------|----------|-------|-------------|------------|
-| Y1 | 1,200 | 50 | 600,000 | ~150 MB |
-| Y2 | 2,400 | 50 | 1,200,000 | ~300 MB |
-| Y3 | 3,600 | 50 | 1,800,000 | ~450 MB |
-| Y5 | 6,000 | 50 | 3,000,000 | ~750 MB |
-
-**Conclusion**: Very manageable, no partitioning needed for 5+ years.
-
----
-
-## 🎯 Schema Best Practices Applied
-
-### ✅ Normalization
-- 3NF (Third Normal Form) achieved
-- No redundant data
-- All relationships properly defined
-
-### ✅ Performance
-- 25+ indexes strategically placed
-- Composite indexes for common queries
-- Foreign keys indexed automatically
-
-### ✅ Data Integrity
-- Foreign key constraints
-- ENUM validation for status fields
-- Unique constraints prevent duplicates
-- ON DELETE policies preserve data
-
-### ✅ Scalability
-- BIGINT for all IDs (supports 9 quintillion records)
-- Indexed date columns
-- TEXT fields for flexible content
-- InnoDB engine for ACID compliance
-
-### ✅ Security
-- No sensitive data in logs
-- Password hashed (bcrypt)
-- Email validation
-- Role-based access control
-
----
-
-## 📊 Visualization Tools
-
-This schema can be visualized using:
-
-1. **Mermaid** (Markdown/GitHub):
-   - Copy ERD diagram above
-   - Paste in GitHub README or Mermaid Live Editor
-
-2. **MySQL Workbench**:
-   ```bash
-   # Generate ERD from existing database
-   Database → Reverse Engineer → Select Tables
-   ```
-
-3. **dbdiagram.io**:
-   ```sql
-   -- Export schema to DBML format
-   -- Import to https://dbdiagram.io
-   ```
-
-4. **DBeaver**:
-   ```
-   Right-click database → ER Diagram
-   ```
+> Sangat manageable — tidak perlu partisi untuk 5+ tahun.
 
 ---
 
 ## 🔄 Migration History
 
-| Version | Date | Changes | Migration File |
-|---------|------|---------|----------------|
-| 1.0.0 | 2026-02-05 | Initial schema | `2014_10_12_000000_create_users_table.php` |
-| 1.0.0 | 2026-02-05 | Products table | `YYYY_MM_DD_HHMMSS_create_products_table.php` |
-| 1.0.0 | 2026-02-05 | Lines table | `YYYY_MM_DD_HHMMSS_create_lines_table.php` |
-| 1.0.0 | 2026-02-05 | Defect types | `YYYY_MM_DD_HHMMSS_create_defect_types_table.php` |
-| 1.0.0 | 2026-02-05 | Components | `YYYY_MM_DD_HHMMSS_create_components_table.php` |
-| 1.0.0 | 2026-02-05 | Daily targets | `YYYY_MM_DD_HHMMSS_create_daily_targets_table.php` |
-| 1.0.0 | 2026-02-05 | Inspections | `YYYY_MM_DD_HHMMSS_create_inspections_table.php` |
-| 1.1.0 | 2026-02-05 | Performance indexes | `2026_02_05_043408_add_performance_indexes_to_tables.php` |
+| Versi | Tanggal | File |
+|-------|---------|------|
+| 1.0.0 | 2026-02-05 | Initial schema (users, products, lines, defect_types, components, daily_targets, inspections) |
+| 1.1.0 | 2026-02-05 | Performance indexes (`add_performance_indexes_to_tables`) |
 
 ---
 
-## ✅ Schema Validation Checklist
+## ✅ Schema Checklist
 
-- [x] All tables have primary keys
-- [x] All foreign keys have indexes
-- [x] All date columns have indexes
-- [x] Composite indexes for common queries
-- [x] Unique constraints for business rules
-- [x] ON DELETE policies defined
-- [x] Default values set appropriately
-- [x] ENUM fields have valid values only
-- [x] TEXT fields for unlimited content
-- [x] Timestamps on all tables
+- [x] Semua tabel punya primary key
+- [x] Semua foreign key punya index
+- [x] Semua kolom date punya index
+- [x] Composite index untuk query umum
+- [x] Unique constraint untuk business rules
+- [x] ON DELETE policy terdefinisi
+- [x] Default value tepat
+- [x] ENUM field dengan nilai valid
+- [x] Timestamps di semua tabel
 
 ---
 
-**Schema Version**: 1.1.0  
-**Last Updated**: 2026-02-05  
-**Database Size**: ~150 MB (Y1 estimate)  
-**Total Tables**: 12  
-**Total Indexes**: 25+  
+**Total Tabel**: 7
+**Total Indexes**: 25+
 **Total Foreign Keys**: 6
-
-✅ **Production Ready!**
+**Status**: ✅ Production Ready
