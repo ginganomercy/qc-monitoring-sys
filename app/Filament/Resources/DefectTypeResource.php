@@ -60,6 +60,11 @@ class DefectTypeResource extends Resource
             ]);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withCount('inspections');
+    }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -74,14 +79,16 @@ class DefectTypeResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\BadgeColumn::make('severity')
+                Tables\Columns\TextColumn::make('severity')
                     ->label('Tingkat Keparahan')
-                    ->colors([
-                        'success' => 'low',
-                        'warning' => 'medium',
-                        'danger' => 'high',
-                        'primary' => 'critical', // Using 'primary' (blue) instead of duplicate 'danger'
-                    ])
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'low' => 'success',
+                        'medium' => 'warning',
+                        'high' => 'danger',
+                        'critical' => 'danger',
+                        default => 'gray',
+                    })
                     ->sortable(),
 
                 Tables\Columns\IconColumn::make('is_active')

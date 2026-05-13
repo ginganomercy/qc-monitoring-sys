@@ -10,14 +10,19 @@ class UserSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * ⚠️ IMPORTANT: Set SEED_ADMIN_PASSWORD in .env before running.
+     *    Default fallback is intentionally weak to force you to change it.
      */
     public function run(): void
     {
+        $password = env('SEED_ADMIN_PASSWORD', 'ChangeMe!2026');
+
         // Create admin user
         User::create([
             'name' => 'Admin QC',
             'email' => 'admin@qc.com',
-            'password' => Hash::make('tegal*2020'),
+            'password' => Hash::make($password),
             'email_verified_at' => now(),
         ]);
 
@@ -25,7 +30,7 @@ class UserSeeder extends Seeder
         User::create([
             'name' => 'Alisa',
             'email' => 'alisa2891@qc.com',
-            'password' => Hash::make('tegal*2020'),
+            'password' => Hash::make($password),
             'email_verified_at' => now(),
         ]);
     }

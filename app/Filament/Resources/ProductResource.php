@@ -48,6 +48,11 @@ class ProductResource extends Resource
             ]);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withCount('inspections');
+    }
+
     public static function table(Table $table): Table
     {
         return $table

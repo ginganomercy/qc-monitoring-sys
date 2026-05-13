@@ -1,202 +1,88 @@
-# 🔍 QC Monitoring System
+# QC Monitoring System
 
-> **Quality Control Monitoring & Inspection Management System**
-> Built with Laravel 10 + Filament v3 + MySQL
+Sistem manajemen *Quality Control* berbasis Laravel 10 dan Filament 3. 
+Dirancang khusus untuk monitoring produksi pabrik garmen, termasuk pelacakan *defect*, *daily target*, dan kinerja lini produksi.
 
-[![Laravel](https://img.shields.io/badge/Laravel-10.x-red?style=flat-square)](https://laravel.com)
-[![Filament](https://img.shields.io/badge/Filament-3.x-yellow?style=flat-square)](https://filamentphp.com)
-[![PHP](https://img.shields.io/badge/PHP-8.1+-blue?style=flat-square)](https://php.net)
-[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-
----
-
-## 📋 Overview
-
-**QC Monitor** adalah aplikasi web untuk **tracking dan monitoring inspeksi kualitas produk** di production line dengan **interface 100% Bahasa Indonesia**. Sistem membantu tim QC mencatat hasil inspeksi, menganalisa defect, dan membuat keputusan berbasis data real-time.
-
-- ✅ Record inspeksi produk (Pass/Reject)
-- 📊 Monitor dashboard real-time
-- 📈 Analisa defect berdasarkan tipe & severity
-- 🎯 Track daily targets per line
-- 🌐 UI Bahasa Indonesia (hybrid: technical terms tetap English)
+## 🚀 Fitur Utama
+- **Manajemen QC**: Input form inspeksi dinamis (Pass/Reject) dengan detail komponen & jenis *defect*.
+- **Data Master**: Kelola Style Produk, Line Produksi, Jenis Defect, dan Komponen.
+- **Perencanaan**: Set dan pantau Target Harian per lini.
+- **Dashboard Real-Time**: 
+  - Sparklines performa 7 hari terakhir.
+  - Grafik tren inspeksi bulanan/mingguan.
+  - Top 5 *Defects* (dengan prioritas warna).
+  - *Lazy loading* widgets untuk performa.
 
 ---
 
-## ✨ Key Features
-
-### 1. Dashboard Analytics 📊
-- 4 widget statistik: Total, Lolos, Ditolak, Pass Rate harian
-- Grafik trend 7 hari terakhir
-- Top 5 defect paling sering
-- 10 inspeksi terakhir (lazy loading)
-
-### 2. Master Data Management 🗂️
-- **Produk**: Manage style numbers & deskripsi
-- **Lines**: Manage production lines
-- **Tipe Defect**: Klasifikasi dengan severity (low/medium/high/critical)
-- **Komponen**: Komponen produk yang bisa terdefect
-- **Target Harian**: Set target inspeksi per line per hari
-
-### 3. QC Inspections 🔍
-- Form cepat (<30 detik per inspeksi)
-- Conditional fields berdasarkan status Pass/Reject
-- Validasi: tidak bisa future date, reject wajib pilih defect type
-- Inspector otomatis tercatat dari user yang login
-
-### 4. Reporting & Analytics 📈
-- Filter: date range, produk, line, status, inspector
-- Search & sort di semua resource
-- Pagination otomatis
+## 🛠️ Requirements
+- Docker & Docker Compose
+- (Opsional) PHP 8.2 & Composer jika ingin run lokal tanpa Docker.
 
 ---
 
-## 🚀 Tech Stack
+## 📦 Deployment via Docker (Production-Ready)
 
-| Layer | Technology | Version |
-|-------|-----------|---------|
-| Backend | Laravel | 10.x |
-| Admin Panel | Filament | 3.2+ |
-| Database | MySQL | 8.0+ |
-| Frontend | Livewire | 3.x |
-| Styling | Tailwind CSS | 3.x |
+Proyek ini menggunakan konfigurasi 4-container: **Nginx**, **PHP-FPM**, **MySQL 8.0**, dan **Redis 7**.
 
----
-
-## 📦 Quick Start
-
-### 1. Clone Repository
+### 1. Setup Environment
 ```bash
-git clone https://github.com/ginganomercy/qc-monitoring-sys.git qc-monitoring
-cd qc-monitoring
-```
-
-### 2. Install Dependencies
-```bash
-composer install
-npm install
-```
-
-### 3. Environment Setup
-```bash
+# Copy template .env
 cp .env.example .env
+
+# Generate Application Key
+# Jika tidak punya instalasi PHP lokal, Anda bisa menjalankan command ini nanti
+# di dalam container (lihat step 3)
 php artisan key:generate
 ```
 
-### 4. Configure Database
-Edit `.env`:
+Ubah password default di `.env`:
 ```env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=qc_monitorr
-DB_USERNAME=root
-DB_PASSWORD=
+DB_PASSWORD=SecurePassword123!
+SEED_ADMIN_PASSWORD=GantiPasswordIni!
 ```
 
-### 5. Run Migrations & Seed
+### 2. Start Services
 ```bash
-php artisan migrate --seed
+docker compose up -d
 ```
+Container akan otomatis:
+- Menjalankan migrasi database
+- Membersihkan dan me-*rebuild* cache config/route
+- Membuat *symbolic link* untuk storage.
 
-### 6. Start Development Server
+### 3. Setup (Jika belum generate app key)
 ```bash
-php artisan serve
+docker compose exec app php artisan key:generate
+docker compose exec app php artisan config:cache
 ```
 
-Akses: `http://127.0.0.1:8000/admin`
-
----
-
-## 👥 Default Users (After Seeding)
-
-| Email | Password | Nama |
-|-------|----------|------|
-| `admin@qc.com` | `tegal*2020` | Admin QC |
-| `alisa2891@qc.com` | `tegal*2020` | Alisa (Inspector) |
-
-> Semua user memiliki akses penuh. Role system belum diimplementasikan.
-
----
-
-## 📁 Project Structure
-
-```
-qc-monitoring-system/
-├── app/
-│   ├── Filament/
-│   │   ├── Resources/          # CRUD resources (6 resources)
-│   │   └── Widgets/            # Dashboard widgets (4 widgets)
-│   ├── Helpers/
-│   │   └── CacheHelper.php     # Centralized caching utility
-│   └── Models/                 # Eloquent models
-├── database/
-│   ├── migrations/             # 8 migration files
-│   └── seeders/               # UserSeeder, DefectTypeSeeder, dll
-├── public/
-│   └── images/                 # Logo & aset statis
-│       ├── logo-poltek.png
-│       └── qc-logo-dashboard.png
-├── lang/id/                    # Terjemahan Bahasa Indonesia
-├── .env.example
-├── CLIENT.md                   # Dokumentasi untuk klien/stakeholder
-├── ENGINEER.md                 # Dokumentasi teknis developer
-├── SCHEMA.md                   # Detail skema database
-└── NOTE.md                     # Catatan developer internal
+### 4. Import Data Awal (Opsional)
+Untuk populate data dummy/master:
+```bash
+docker compose exec app php artisan db:seed
 ```
 
----
-
-## ⚡ Performance
-
-| Metrik | Nilai |
-|--------|-------|
-| Page load | ~150–180ms |
-| Dashboard refresh | <300ms |
-| Query per halaman | 1–2 (dari 13+ sebelumnya) |
-| Memory reduction | 40% |
-
-**Optimizations**: N+1 elimination, DB indexing (14+ indexes), file-based cache & session, selective column loading, lazy widget loading.
+### Akses Aplikasi
+Buka browser ke `http://localhost`. Semua traffic ke port 80 di-*handle* oleh container Nginx.
+Default login (jika menjalankan seeder):
+- Email: `admin@qc.com`
+- Password: `(Lihat variabel SEED_ADMIN_PASSWORD di .env)`
 
 ---
 
-## 🔐 Security
+## 🗄️ Caching & Optimization
 
-- ✅ CSRF Protection (Laravel default)
-- ✅ SQL Injection Prevention (Eloquent ORM)
-- ✅ XSS Protection (Blade escaping)
-- ✅ Password Hashing (bcrypt)
-- ✅ Input Validation (form request)
-- ✅ Rate limiting login
+Sistem ini menerapkan optimisasi *production-level*:
+- **Session & Cache**: Disimpan di **Redis** untuk eliminasi *file I/O bottleneck*.
+- **Query Optimization**: *Eager loading* (`with`) & agregasi agregat (1 SQL query alih-alih 21 di widget chart).
+- **Cache Invalidations**: Widget cache otomatis di-*reset* saat ada submit form inspeksi baru.
 
 ---
 
-## 📈 Roadmap
+## 🔒 Security
 
-### Selesai ✅
-- [x] Core QC monitoring & dashboard
-- [x] 100% UI Bahasa Indonesia
-- [x] Performance optimization (95% improvement)
-- [x] Database indexing & caching
-
-### Planned 🔄
-- [ ] Export ke Excel/PDF
-- [ ] Email notifikasi defect kritis
-- [ ] Role-based access control (admin vs inspector)
-- [ ] Mobile-responsive improvements
-- [ ] Redis cache untuk production
-
----
-
-## 👨‍💻 Documentation
-
-| File | Untuk | Isi |
-|------|-------|-----|
-| [README.md](README.md) | Semua | Overview & quick start |
-| [CLIENT.md](CLIENT.md) | Klien/Stakeholder | Manfaat bisnis, fitur, harga |
-| [ENGINEER.md](ENGINEER.md) | Developer | Setup, arsitektur, optimasi |
-| [SCHEMA.md](SCHEMA.md) | Developer/DBA | Detail skema database |
-| [NOTE.md](NOTE.md) | Developer | Catatan internal |
-
----
-
-<p align="center">Made with ❤️ for Quality Control Teams</p>
+- `expose_php = Off` dan security headers diaktifkan via Nginx.
+- Akses langsung ke `/.env` dan file *hidden* diblokir.
+- Form inspeksi terlindungi dari manipulasi *request*: Inspector otomatis di-set ke akun yang login (`auth()->id()`).
+- Data session tersandikan (`encrypt = true`) dan diamankan dengan `same_site = strict`.

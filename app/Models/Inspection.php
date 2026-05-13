@@ -36,6 +36,40 @@ class Inspection extends Model
     ];
 
     /**
+     * Boot the model with business rule enforcement.
+     *
+     * Rules enforced at model level (defense-in-depth):
+     * 1. status = 'reject' → defect_type_id MUST be filled
+     * 2. status = 'pass'   → auto-clear defect fields (nullify)
+     * 3. inspection_date   → cannot be in the future
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (Inspection $inspection) {
+            // Rule 1: Reject MUST have a defect type
+            if ($inspection->status === 'reject' && empty($inspection->defect_type_id)) {
+                throw new \InvalidArgumentException(
+                    'Jenis defect wajib diisi untuk inspeksi dengan status reject.'
+                );
+            }
+
+            // Rule 2: Pass → auto-clear defect data for consistency
+            if ($inspection->status === 'pass') {
+                $inspection->defect_type_id = null;
+                $inspection->component_id = null;
+                $inspection->notes = null;
+            }
+
+            // Rule 3: Cannot inspect in the future
+            if ($inspection->inspection_date && $inspection->inspection_date->isFuture()) {
+                throw new \InvalidArgumentException(
+                    'Tanggal inspeksi tidak boleh di masa depan.'
+                );
+            }
+        });
+    }
+
+    /**
      * Get the product for this inspection.
      */
     public function product(): BelongsTo

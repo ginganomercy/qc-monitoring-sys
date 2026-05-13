@@ -48,6 +48,11 @@ class LineResource extends Resource
             ]);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withCount(['inspections', 'dailyTargets']);
+    }
+
     public static function table(Table $table): Table
     {
         return $table

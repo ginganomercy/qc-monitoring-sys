@@ -64,14 +64,18 @@ class InspectionResource extends Resource
                     ->schema([
                         Forms\Components\DatePicker::make('inspection_date')
                             ->label('Tanggal Inspeksi')
-                            ->label('Tanggal Inspeksi')
                             ->required()
                             ->default(now())
+                            ->maxDate(now())
                             ->native(false),
 
                         Forms\Components\Select::make('product_id')
                             ->label('Produk')
-                            ->relationship('product', 'style_number')
+                            ->relationship(
+                                'product',
+                                'style_number',
+                                modifyQueryUsing: fn(Builder $query) => $query->where('is_active', true)
+                            )
                             ->searchable()
                             ->preload()
                             ->required()
@@ -90,7 +94,11 @@ class InspectionResource extends Resource
 
                         Forms\Components\Select::make('line_id')
                             ->label('Line')
-                            ->relationship('line', 'name')
+                            ->relationship(
+                                'line',
+                                'name',
+                                modifyQueryUsing: fn(Builder $query) => $query->where('is_active', true)
+                            )
                             ->searchable()
                             ->preload()
                             ->required(),
@@ -108,35 +116,44 @@ class InspectionResource extends Resource
                         Forms\Components\Select::make('inspector_id')
                             ->label('Inspector')
                             ->relationship('inspector', 'name')
-                            ->searchable()
-                            ->preload()
-                            ->required()
-                            ->default(fn() => auth()->id()),
+                            ->default(fn() => auth()->id())
+                            ->disabled()
+                            ->dehydrated()
+                            ->required(),
                     ])->columns(2),
 
                 Forms\Components\Section::make('Informasi Defect')
                     ->schema([
                         Forms\Components\Select::make('defect_type_id')
                             ->label('Jenis Defect')
-                            ->relationship('defectType', 'name')
+                            ->relationship(
+                                'defectType',
+                                'name',
+                                modifyQueryUsing: fn(Builder $query) => $query->where('is_active', true)
+                            )
                             ->searchable()
                             ->preload()
-                            ->visible(fn(Forms\Get $get) => $get('status') === 'reject'),
+                            ->required(fn(Forms\Get $get): bool => $get('status') === 'reject')
+                            ->visible(fn(Forms\Get $get): bool => $get('status') === 'reject'),
 
                         Forms\Components\Select::make('component_id')
                             ->label('Komponen')
-                            ->relationship('component', 'name')
+                            ->relationship(
+                                'component',
+                                'name',
+                                modifyQueryUsing: fn(Builder $query) => $query->where('is_active', true)
+                            )
                             ->searchable()
                             ->preload()
-                            ->visible(fn(Forms\Get $get) => $get('status') === 'reject'),
+                            ->visible(fn(Forms\Get $get): bool => $get('status') === 'reject'),
 
                         Forms\Components\Textarea::make('notes')
                             ->label('Catatan')
                             ->maxLength(65535)
                             ->columnSpanFull()
-                            ->visible(fn(Forms\Get $get) => $get('status') === 'reject'),
+                            ->visible(fn(Forms\Get $get): bool => $get('status') === 'reject'),
                     ])->columns(2)
-                    ->visible(fn(Forms\Get $get) => $get('status') === 'reject'),
+                    ->visible(fn(Forms\Get $get): bool => $get('status') === 'reject'),
             ]);
     }
 
@@ -160,12 +177,14 @@ class InspectionResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\BadgeColumn::make('status')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Status')
-                    ->colors([
-                        'success' => 'pass',
-                        'danger' => 'reject',
-                    ])
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'pass' => 'success',
+                        'reject' => 'danger',
+                        default => 'gray',
+                    })
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('defectType.name')

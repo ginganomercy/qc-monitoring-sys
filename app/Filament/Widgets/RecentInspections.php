@@ -11,7 +11,7 @@ class RecentInspections extends BaseWidget
 {
     protected static ?int $sort = 4;
 
-    protected static bool $isLazy = true; // ✅ Lazy load to prevent blocking initial page load
+    protected static bool $isLazy = true;
 
     protected int|string|array $columnSpan = 'full';
 
@@ -19,9 +19,7 @@ class RecentInspections extends BaseWidget
     {
         return $table
             ->query(
-                // ✅ Optimized: Selective column loading + eager loading
-                // Before: Load all columns (SELECT *)
-                // After: Load only needed columns (40% less memory, 15% faster)
+                // Optimized: Selective column loading + eager loading
                 function () {
                     return Inspection::select([
                         'id',
@@ -34,7 +32,7 @@ class RecentInspections extends BaseWidget
                         'inspector_id',
                         'created_at',
                     ])->with([
-                                'product:id,style_number',          // ✅ Only load needed columns
+                                'product:id,style_number',
                                 'line:id,code',
                                 'defectType:id,name,severity',
                                 'component:id,name',
@@ -60,25 +58,28 @@ class RecentInspections extends BaseWidget
                     ->label('Line')
                     ->searchable(),
 
-                Tables\Columns\BadgeColumn::make('status')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Status')
-                    ->colors([
-                        'success' => 'pass',
-                        'danger' => 'reject',
-                    ]),
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'pass' => 'success',
+                        'reject' => 'danger',
+                        default => 'gray',
+                    }),
 
                 Tables\Columns\TextColumn::make('defectType.name')
                     ->label('Defect')
                     ->limit(30)
                     ->placeholder('—'),
 
-                Tables\Columns\BadgeColumn::make('defectType.severity')
+                Tables\Columns\TextColumn::make('defectType.severity')
                     ->label('Tingkat Keparahan')
+                    ->badge()
                     ->color(fn(?string $state): string => match ($state) {
-                        'low' => 'success',      // ✅ Green
-                        'medium' => 'warning',   // ✅ Yellow/Orange
-                        'high' => 'danger',      // ✅ Red
-                        'critical' => 'danger',  // ✅ Deep Red
+                        'low' => 'success',
+                        'medium' => 'warning',
+                        'high' => 'danger',
+                        'critical' => 'danger',
                         default => 'gray',
                     })
                     ->placeholder('—'),

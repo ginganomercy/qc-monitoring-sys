@@ -53,6 +53,10 @@ class CacheHelper
             'widget_inspections_passed',
             'widget_inspections_rejected',
             'widget_pass_rate',
+            // Added widget keys from Sprint 2
+            'dashboard_stats',
+            'chart_daily_7d',
+            'chart_top_defects_7d',
         ];
 
         foreach ($keys as $key) {
