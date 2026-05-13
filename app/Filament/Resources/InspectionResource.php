@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\InspectionResource\Pages;
 use App\Helpers\CacheHelper;
 use App\Models\Inspection;
+use App\Services\ExportService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -40,7 +41,7 @@ class InspectionResource extends Resource
                 'line:id,code,name',
                 'defectType:id,name,severity',
                 'component:id,name',
-                'inspector:id,name',
+                'user:id,name',
             ]);
     }
 
@@ -113,13 +114,9 @@ class InspectionResource extends Resource
                             ->reactive()
                             ->default('pass'),
 
-                        Forms\Components\Select::make('inspector_id')
-                            ->label('Inspector')
-                            ->relationship('inspector', 'name')
-                            ->default(fn() => auth()->id())
-                            ->disabled()
-                            ->dehydrated()
-                            ->required(),
+                        // Hidden field - auto-set to current admin user
+                        Forms\Components\Hidden::make('user_id')
+                            ->default(fn() => auth()->id()),
                     ])->columns(2),
 
                 Forms\Components\Section::make('Informasi Defect')
@@ -198,9 +195,10 @@ class InspectionResource extends Resource
                     ->toggleable()
                     ->placeholder('—'),
 
-                Tables\Columns\TextColumn::make('inspector.name')
-                    ->label('Inspector')
-                    ->toggleable(),
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Admin')
+                    ->toggleable()
+                    ->placeholder('System'),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Dibuat Pada')

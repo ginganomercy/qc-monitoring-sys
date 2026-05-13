@@ -142,7 +142,7 @@ php artisan serve
 | `admin@qc.com` | `tegal*2020` | Admin QC |
 | `alisa2891@qc.com` | `tegal*2020` | Alisa |
 
-> Semua user memiliki akses yang sama. Tidak ada role system saat ini.
+> **Mode**: Admin-Only — Tidak ada role inspector. Semua input dilakukan oleh admin yang login.
 
 ### IDE (VS Code)
 
@@ -168,10 +168,10 @@ Core Tables:
   - daily_targets: Target harian (~300 record/bulan)
 
 Auth:
-  - users: Akun inspector (tanpa role system)
+  - users: Akun admin (admin-only mode)
 ```
 
-> ⚠️ **Tidak ada** tabel Spatie Permission (roles, permissions, pivot). RBAC belum diimplementasikan.
+> ✅ Spatie Permission tables telah dihapus. Mode admin-only.
 
 ### Critical Indexes
 
@@ -188,7 +188,7 @@ INDEX idx_product_id      (product_id)
 INDEX idx_line_id         (line_id)
 INDEX idx_defect_type_id  (defect_type_id)
 INDEX idx_component_id    (component_id)
-INDEX idx_inspector_id    (inspector_id)
+INDEX idx_user_id          (user_id)
 
 -- Composite (CRITICAL untuk dashboard)
 INDEX idx_status_date     (status, inspection_date)
@@ -431,15 +431,16 @@ php artisan tinker
 
 ## 📈 Future Roadmap
 
-| Fitur | Prioritas | Estimasi |
-|-------|-----------|----------|
-| Role-based access (admin vs inspector) | High | 1–2 hari |
-| Export Excel / PDF | High | 2–3 hari |
-| Email notifikasi defect kritis | Medium | 1–2 hari |
-| Redis cache (production) | Medium | 0.5 hari |
-| Real-time dashboard (polling) | Low | 1 hari |
-| Native mobile app | Low | 2–4 minggu |
-| ERP integration | Future | Custom |
+| Fitur | Prioritas | Estimasi | Status |
+|-------|-----------|----------|--------|
+| Export Excel / PDF | High | ✅ Selesai | Done |
+| Admin-only mode (no inspector role) | High | ✅ Selesai | Done |
+| Query optimization (7→2 queries) | High | ✅ Selesai | Done |
+| Email notifikasi defect kritis | Medium | 1–2 hari | Pending |
+| Redis cache (production) | Medium | 0.5 hari | Pending |
+| Real-time dashboard (polling) | Low | 1 hari | Pending |
+| Native mobile app | Low | 2–4 minggu | Future |
+| ERP integration | Future | Custom | Future |
 
 ---
 

@@ -29,14 +29,14 @@ class RecentInspections extends BaseWidget
                         'line_id',
                         'defect_type_id',
                         'component_id',
-                        'inspector_id',
+                        'user_id',
                         'created_at',
                     ])->with([
                                 'product:id,style_number',
                                 'line:id,code',
                                 'defectType:id,name,severity',
                                 'component:id,name',
-                                'inspector:id,name',
+                                'user:id,name',
                             ])
                         ->latest('inspection_date')
                         ->latest('created_at')
@@ -84,8 +84,8 @@ class RecentInspections extends BaseWidget
                     })
                     ->placeholder('—'),
 
-                Tables\Columns\TextColumn::make('inspector.name')
-                    ->label('Inspector')
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Admin')
                     ->toggleable(),
             ])
             ->heading('Inspeksi Terbaru (10 Terakhir)');

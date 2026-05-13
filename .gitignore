@@ -16,3 +16,16 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+
+# Docker persistent data
+/docker/mysql/data/
+/docker/redis/data/
+
+# Logs
+*.log
+storage/logs/*.log
+
+# OS files
+.DS_Store
+Thumbs.db

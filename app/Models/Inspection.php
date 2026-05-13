@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 class Inspection extends Model
 {
@@ -23,7 +24,9 @@ class Inspection extends Model
         'defect_type_id',
         'component_id',
         'notes',
-        'inspector_id',
+        'user_id',
+        'approved_by',
+        'approved_at',
     ];
 
     /**
@@ -33,6 +36,7 @@ class Inspection extends Model
      */
     protected $casts = [
         'inspection_date' => 'date',
+        'approved_at' => 'datetime',
     ];
 
     /**
@@ -42,6 +46,7 @@ class Inspection extends Model
      * 1. status = 'reject' → defect_type_id MUST be filled
      * 2. status = 'pass'   → auto-clear defect fields (nullify)
      * 3. inspection_date   → cannot be in the future
+     * 4. user_id           → automatically set to current user (admin-only)
      */
     protected static function booted(): void
     {
@@ -61,10 +66,16 @@ class Inspection extends Model
             }
 
             // Rule 3: Cannot inspect in the future
-            if ($inspection->inspection_date && $inspection->inspection_date->isFuture()) {
+            $inspectionDate = $inspection->inspection_date;
+            if ($inspectionDate && Carbon::parse($inspectionDate)->startOfDay()->greaterThan(Carbon::today())) {
                 throw new \InvalidArgumentException(
                     'Tanggal inspeksi tidak boleh di masa depan.'
                 );
+            }
+
+            // Rule 4: Auto-set user_id to current admin (admin-only system)
+            if (empty($inspection->user_id) && auth()->check()) {
+                $inspection->user_id = auth()->id();
             }
         });
     }
@@ -102,11 +113,20 @@ class Inspection extends Model
     }
 
     /**
-     * Get the inspector (user) for this inspection.
+     * Get the user (admin) who created this inspection.
+     * Note: Renamed from 'inspector' to 'user' for admin-only system.
      */
-    public function inspector(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'inspector_id');
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Get the admin who approved this inspection.
+     */
+    public function approvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
     /**
@@ -147,5 +167,21 @@ class Inspection extends Model
     public function scopeBetweenDates($query, $startDate, $endDate)
     {
         return $query->whereBetween('inspection_date', [$startDate, $endDate]);
+    }
+
+    /**
+     * Scope for approved inspections.
+     */
+    public function scopeApproved($query)
+    {
+        return $query->whereNotNull('approved_by');
+    }
+
+    /**
+     * Scope for pending (not yet approved) inspections.
+     */
+    public function scopePending($query)
+    {
+        return $query->whereNull('approved_by');
     }
 }
