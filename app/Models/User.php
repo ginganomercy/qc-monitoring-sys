@@ -47,6 +47,6 @@ class User extends Authenticatable
      */
     public function inspections(): HasMany
     {
-        return $this->hasMany(Inspection::class, 'inspector_id');
+        return $this->hasMany(Inspection::class, 'user_id');
     }
 }

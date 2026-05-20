@@ -24,7 +24,7 @@ class EditInspection extends EditRecord
      */
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        $data['inspector_id'] = $this->record->inspector_id;
+        $data['user_id'] = $this->record->user_id;
 
         return $data;
     }

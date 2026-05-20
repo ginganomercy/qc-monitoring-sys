@@ -172,7 +172,7 @@ return [
         'product_id' => 'produk',
         'line_id' => 'line',
         'status' => 'status',
-        'inspector_id' => 'inspector',
+        'user_id' => 'user',
         'defect_type_id' => 'jenis defect',
         'component_id' => 'komponen',
         'notes' => 'catatan',

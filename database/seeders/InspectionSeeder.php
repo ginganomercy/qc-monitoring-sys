@@ -39,7 +39,7 @@ class InspectionSeeder extends Seeder
                     'product_id' => $products->random()->id,
                     'line_id' => $lines->random()->id,
                     'status' => $status,
-                    'inspector_id' => $inspector->id,
+                    'user_id' => $inspector->id,
                 ];
 
                 // If rejected, add defect details
@@ -63,7 +63,7 @@ class InspectionSeeder extends Seeder
                 'product_id' => $products->random()->id,
                 'line_id' => $lines->random()->id,
                 'status' => $status,
-                'inspector_id' => $inspector->id,
+                'user_id' => $inspector->id,
             ];
 
             if ($status === 'reject') {

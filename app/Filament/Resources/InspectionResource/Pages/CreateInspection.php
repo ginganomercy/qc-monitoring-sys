@@ -16,7 +16,7 @@ class CreateInspection extends CreateRecord
      */
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $data['inspector_id'] = auth()->id();
+        $data['user_id'] = auth()->id();
 
         return $data;
     }
