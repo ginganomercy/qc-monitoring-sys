@@ -100,11 +100,11 @@ class DailyTargetResource extends Resource
                         return $query
                             ->when(
                                 $data['from'],
-                                fn($query, $date) => $query->whereDate('target_date', '>=', $date),
+                                fn ($query, $date) => $query->whereDate('target_date', '>=', $date),
                             )
                             ->when(
                                 $data['until'],
-                                fn($query, $date) => $query->whereDate('target_date', '<=', $date),
+                                fn ($query, $date) => $query->whereDate('target_date', '<=', $date),
                             );
                     }),
             ])

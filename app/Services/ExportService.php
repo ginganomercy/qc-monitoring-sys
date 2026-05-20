@@ -3,11 +3,9 @@
 namespace App\Services;
 
 use App\Models\Inspection;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Carbon;
-use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Cache;
+use Maatwebsite\Excel\Facades\Excel;
 
 /**
  * Export Service
@@ -65,7 +63,7 @@ class ExportService extends BaseService
         $fileName = $this->generateFileName('pdf', $filters);
 
         return response()->streamDownload(
-            fn() => print($pdf->output()),
+            fn () => print($pdf->output()),
             $fileName,
             ['Content-Type' => 'application/pdf']
         );
@@ -115,18 +113,16 @@ class ExportService extends BaseService
                 : 0;
 
             // Top defects
-            $topDefects = Inspection::selectRaw("
+            $topDefects = Inspection::selectRaw('
                 defect_types.name,
                 defect_types.severity,
                 COUNT(*) as count
-            ")
+            ')
                 ->join('defect_types', 'inspections.defect_type_id', '=', 'defect_types.id')
                 ->where('status', 'reject')
-                ->when(isset($filters['start_date']), fn($q) =>
-                    $q->whereDate('inspection_date', '>=', $filters['start_date'])
+                ->when(isset($filters['start_date']), fn ($q) => $q->whereDate('inspection_date', '>=', $filters['start_date'])
                 )
-                ->when(isset($filters['end_date']), fn($q) =>
-                    $q->whereDate('inspection_date', '<=', $filters['end_date'])
+                ->when(isset($filters['end_date']), fn ($q) => $q->whereDate('inspection_date', '<=', $filters['end_date'])
                 )
                 ->groupBy('defect_type_id', 'defect_types.name', 'defect_types.severity')
                 ->orderByDesc('count')
@@ -168,23 +164,23 @@ class ExportService extends BaseService
      */
     protected function applyFilters($query, array $filters = []): void
     {
-        if (!empty($filters['start_date'])) {
+        if (! empty($filters['start_date'])) {
             $query->whereDate('inspection_date', '>=', $filters['start_date']);
         }
 
-        if (!empty($filters['end_date'])) {
+        if (! empty($filters['end_date'])) {
             $query->whereDate('inspection_date', '<=', $filters['end_date']);
         }
 
-        if (!empty($filters['product_id'])) {
+        if (! empty($filters['product_id'])) {
             $query->where('product_id', $filters['product_id']);
         }
 
-        if (!empty($filters['line_id'])) {
+        if (! empty($filters['line_id'])) {
             $query->where('line_id', $filters['line_id']);
         }
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
     }
@@ -205,7 +201,7 @@ class ExportService extends BaseService
         $dateStr = now()->format('Y-m-d_His');
         $prefix = 'inspections';
 
-        if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
+        if (! empty($filters['start_date']) && ! empty($filters['end_date'])) {
             $prefix = "report_{$filters['start_date']}_{$filters['end_date']}";
         }
 
@@ -222,7 +218,8 @@ class ExportService extends BaseService
     protected function getCacheKey(string $prefix, array $filters = []): string
     {
         ksort($filters);
-        return "{$prefix}_" . md5(serialize($filters));
+
+        return "{$prefix}_".md5(serialize($filters));
     }
 
     /**

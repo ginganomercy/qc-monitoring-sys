@@ -38,12 +38,12 @@ class ListInspections extends ListRecords
                 ->action(function (array $data) {
                     $startDate = \Carbon\Carbon::parse($data['start_date'])->startOfDay();
                     $endDate = \Carbon\Carbon::parse($data['end_date'])->endOfDay();
-                    $filename = 'Laporan_QC_' . $startDate->format('Ymd') . '-' . $endDate->format('Ymd');
+                    $filename = 'Laporan_QC_'.$startDate->format('Ymd').'-'.$endDate->format('Ymd');
 
                     if ($data['format'] === 'excel') {
                         return \Maatwebsite\Excel\Facades\Excel::download(
                             new \App\Exports\InspectionsExport($startDate, $endDate),
-                            $filename . '.xlsx'
+                            $filename.'.xlsx'
                         );
                     }
 
@@ -59,7 +59,7 @@ class ListInspections extends ListRecords
                         'endDate' => $endDate,
                     ]);
 
-                    return response()->streamDownload(fn () => print($pdf->output()), $filename . '.pdf');
+                    return response()->streamDownload(fn () => print($pdf->output()), $filename.'.pdf');
                 }),
             Actions\CreateAction::make(),
         ];

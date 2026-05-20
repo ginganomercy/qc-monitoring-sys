@@ -38,8 +38,8 @@ class StatsOverview extends BaseWidget
                 ->color('primary')
                 ->chart($chartData['total']),
 
-            Stat::make('Tingkat Kelulusan', $dailyStats['pass_rate'] . '%')
-                ->description($dailyStats['passed_today'] . ' lolos, ' . $dailyStats['rejected_today'] . ' ditolak')
+            Stat::make('Tingkat Kelulusan', $dailyStats['pass_rate'].'%')
+                ->description($dailyStats['passed_today'].' lolos, '.$dailyStats['rejected_today'].' ditolak')
                 ->descriptionIcon($dailyStats['pass_rate'] >= 85 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down')
                 ->color($dailyStats['pass_rate'] >= 85 ? 'success' : ($dailyStats['pass_rate'] >= 70 ? 'warning' : 'danger'))
                 ->chart($this->calculatePassRateTrend($chartData)),

@@ -10,8 +10,8 @@ class CacheHelper
      * Cache resource count for navigation badges
      * TTL: 5 minutes (300 seconds)
      *
-     * @param string $model Model class name
-     * @param string $key Cache key
+     * @param  string  $model Model class name
+     * @param  string  $key Cache key
      * @return int Count of records
      */
     public static function getResourceCount(string $model, string $key): int
@@ -25,8 +25,8 @@ class CacheHelper
      * Cache widget statistics
      * TTL: 5 minutes (300 seconds)
      *
-     * @param string $key Cache key
-     * @param callable $callback Callback function to execute
+     * @param  string  $key Cache key
+     * @param  callable  $callback Callback function to execute
      * @return mixed Result from callback
      */
     public static function getWidgetStat(string $key, callable $callback): mixed
@@ -37,8 +37,6 @@ class CacheHelper
     /**
      * Clear all QC monitoring caches
      * Useful after data updates
-     *
-     * @return void
      */
     public static function clearQcCaches(): void
     {
@@ -67,9 +65,9 @@ class CacheHelper
     /**
      * Get cache key for date range
      *
-     * @param string $prefix Key prefix
-     * @param string $startDate Start date
-     * @param string $endDate End date
+     * @param  string  $prefix Key prefix
+     * @param  string  $startDate Start date
+     * @param  string  $endDate End date
      * @return string Cache key
      */
     public static function getDateRangeKey(string $prefix, string $startDate, string $endDate): string

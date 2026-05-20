@@ -32,12 +32,12 @@ class RecentInspections extends BaseWidget
                         'user_id',
                         'created_at',
                     ])->with([
-                                'product:id,style_number',
-                                'line:id,code',
-                                'defectType:id,name,severity',
-                                'component:id,name',
-                                'user:id,name',
-                            ])
+                        'product:id,style_number',
+                        'line:id,code',
+                        'defectType:id,name,severity',
+                        'component:id,name',
+                        'user:id,name',
+                    ])
                         ->latest('inspection_date')
                         ->latest('created_at')
                         ->limit(10);
@@ -61,7 +61,7 @@ class RecentInspections extends BaseWidget
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'pass' => 'success',
                         'reject' => 'danger',
                         default => 'gray',
@@ -75,7 +75,7 @@ class RecentInspections extends BaseWidget
                 Tables\Columns\TextColumn::make('defectType.severity')
                     ->label('Tingkat Keparahan')
                     ->badge()
-                    ->color(fn(?string $state): string => match ($state) {
+                    ->color(fn (?string $state): string => match ($state) {
                         'low' => 'success',
                         'medium' => 'warning',
                         'high' => 'danger',

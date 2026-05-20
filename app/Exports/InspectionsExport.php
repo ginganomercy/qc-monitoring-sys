@@ -38,23 +38,23 @@ class InspectionsExport implements FromView, ShouldAutoSize, WithStyles
         ]);
 
         // Apply filters
-        if (!empty($this->filters['start_date'])) {
+        if (! empty($this->filters['start_date'])) {
             $query->whereDate('inspection_date', '>=', $this->filters['start_date']);
         }
 
-        if (!empty($this->filters['end_date'])) {
+        if (! empty($this->filters['end_date'])) {
             $query->whereDate('inspection_date', '<=', $this->filters['end_date']);
         }
 
-        if (!empty($this->filters['product_id'])) {
+        if (! empty($this->filters['product_id'])) {
             $query->where('product_id', $this->filters['product_id']);
         }
 
-        if (!empty($this->filters['line_id'])) {
+        if (! empty($this->filters['line_id'])) {
             $query->where('line_id', $this->filters['line_id']);
         }
 
-        if (!empty($this->filters['status'])) {
+        if (! empty($this->filters['status'])) {
             $query->where('status', $this->filters['status']);
         }
 

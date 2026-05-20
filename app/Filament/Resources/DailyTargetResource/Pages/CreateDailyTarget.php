@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\DailyTargetResource\Pages;
 
 use App\Filament\Resources\DailyTargetResource;
-use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateDailyTarget extends CreateRecord

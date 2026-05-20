@@ -83,7 +83,7 @@ class DefectTypeResource extends Resource
                 Tables\Columns\TextColumn::make('severity')
                     ->label('Tingkat Keparahan')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'low' => 'success',
                         'medium' => 'warning',
                         'high' => 'danger',

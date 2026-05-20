@@ -5,7 +5,6 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\InspectionResource\Pages;
 use App\Helpers\CacheHelper;
 use App\Models\Inspection;
-use App\Services\ExportService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -75,7 +74,7 @@ class InspectionResource extends Resource
                             ->relationship(
                                 'product',
                                 'style_number',
-                                modifyQueryUsing: fn(Builder $query) => $query->where('is_active', true)
+                                modifyQueryUsing: fn (Builder $query) => $query->where('is_active', true)
                             )
                             ->searchable()
                             ->preload()
@@ -98,7 +97,7 @@ class InspectionResource extends Resource
                             ->relationship(
                                 'line',
                                 'name',
-                                modifyQueryUsing: fn(Builder $query) => $query->where('is_active', true)
+                                modifyQueryUsing: fn (Builder $query) => $query->where('is_active', true)
                             )
                             ->searchable()
                             ->preload()
@@ -116,7 +115,7 @@ class InspectionResource extends Resource
 
                         // Hidden field - auto-set to current admin user
                         Forms\Components\Hidden::make('user_id')
-                            ->default(fn() => auth()->id()),
+                            ->default(fn () => auth()->id()),
                     ])->columns(2),
 
                 Forms\Components\Section::make('Informasi Defect')
@@ -126,31 +125,31 @@ class InspectionResource extends Resource
                             ->relationship(
                                 'defectType',
                                 'name',
-                                modifyQueryUsing: fn(Builder $query) => $query->where('is_active', true)
+                                modifyQueryUsing: fn (Builder $query) => $query->where('is_active', true)
                             )
                             ->searchable()
                             ->preload()
-                            ->required(fn(Forms\Get $get): bool => $get('status') === 'reject')
-                            ->visible(fn(Forms\Get $get): bool => $get('status') === 'reject'),
+                            ->required(fn (Forms\Get $get): bool => $get('status') === 'reject')
+                            ->visible(fn (Forms\Get $get): bool => $get('status') === 'reject'),
 
                         Forms\Components\Select::make('component_id')
                             ->label('Komponen')
                             ->relationship(
                                 'component',
                                 'name',
-                                modifyQueryUsing: fn(Builder $query) => $query->where('is_active', true)
+                                modifyQueryUsing: fn (Builder $query) => $query->where('is_active', true)
                             )
                             ->searchable()
                             ->preload()
-                            ->visible(fn(Forms\Get $get): bool => $get('status') === 'reject'),
+                            ->visible(fn (Forms\Get $get): bool => $get('status') === 'reject'),
 
                         Forms\Components\Textarea::make('notes')
                             ->label('Catatan')
                             ->maxLength(65535)
                             ->columnSpanFull()
-                            ->visible(fn(Forms\Get $get): bool => $get('status') === 'reject'),
+                            ->visible(fn (Forms\Get $get): bool => $get('status') === 'reject'),
                     ])->columns(2)
-                    ->visible(fn(Forms\Get $get): bool => $get('status') === 'reject'),
+                    ->visible(fn (Forms\Get $get): bool => $get('status') === 'reject'),
             ]);
     }
 
@@ -177,7 +176,7 @@ class InspectionResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'pass' => 'success',
                         'reject' => 'danger',
                         default => 'gray',
@@ -233,11 +232,11 @@ class InspectionResource extends Resource
                         return $query
                             ->when(
                                 $data['from'],
-                                fn(Builder $query, $date): Builder => $query->whereDate('inspection_date', '>=', $date),
+                                fn (Builder $query, $date): Builder => $query->whereDate('inspection_date', '>=', $date),
                             )
                             ->when(
                                 $data['until'],
-                                fn(Builder $query, $date): Builder => $query->whereDate('inspection_date', '<=', $date),
+                                fn (Builder $query, $date): Builder => $query->whereDate('inspection_date', '<=', $date),
                             );
                     }),
             ])

@@ -14,7 +14,7 @@ class Kernel extends ConsoleKernel
     {
         // Run backup every day at midnight (only database)
         $schedule->command('backup:run --only-db')->dailyAt('00:00');
-        
+
         // Clean old backups daily at 01:00 AM (keeps last 7 days as configured)
         $schedule->command('backup:clean')->dailyAt('01:00');
     }

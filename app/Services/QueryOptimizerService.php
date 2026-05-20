@@ -3,10 +3,9 @@
 namespace App\Services;
 
 use App\Models\Inspection;
-use App\Models\DefectType;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Query Optimizer Service
@@ -37,7 +36,7 @@ class QueryOptimizerService
                 ->first();
 
             // Query 2: Monthly stats
-            $monthlyStats = Inspection::selectRaw("COUNT(*) as total")
+            $monthlyStats = Inspection::selectRaw('COUNT(*) as total')
                 ->whereMonth('inspection_date', now()->month)
                 ->whereYear('inspection_date', now()->year)
                 ->first();
@@ -95,7 +94,7 @@ class QueryOptimizerService
                 ->groupBy('date')
                 ->orderBy('date')
                 ->get()
-                ->keyBy(fn($row) => Carbon::parse($row->date)->format('Y-m-d'));
+                ->keyBy(fn ($row) => Carbon::parse($row->date)->format('Y-m-d'));
 
             // Fill missing dates with zeros
             $chartData = ['labels' => [], 'total' => [], 'passed' => [], 'rejected' => []];
@@ -127,10 +126,10 @@ class QueryOptimizerService
     public function getTopDefects(int $days = 7, int $limit = 5): array
     {
         return Cache::remember("dashboard_top_defects_{$days}d", self::CACHE_TTL, function () use ($days, $limit) {
-            return Inspection::selectRaw("
+            return Inspection::selectRaw('
                 defect_type_id,
                 COUNT(*) as count
-            ")
+            ')
                 ->where('status', 'reject')
                 ->whereDate('inspection_date', '>=', now()->subDays($days))
                 ->whereNotNull('defect_type_id')
@@ -167,7 +166,7 @@ class QueryOptimizerService
                 ->groupBy('date')
                 ->orderBy('date')
                 ->get()
-                ->keyBy(fn($row) => Carbon::parse($row->date)->format('Y-m-d'));
+                ->keyBy(fn ($row) => Carbon::parse($row->date)->format('Y-m-d'));
 
             $trend = [];
             for ($i = $days - 1; $i >= 0; $i--) {
