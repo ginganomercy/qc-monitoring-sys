@@ -34,6 +34,9 @@ WORKDIR /var/www/html
 # Copy existing application directory
 COPY . .
 
+# Copy custom php.ini configuration
+COPY docker/php/php.ini /usr/local/etc/php/conf.d/custom.ini
+
 # Install dependencies (no dev, optimized)
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 

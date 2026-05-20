@@ -71,23 +71,25 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
 
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest
-            type=sha,format=short
-
-      - name: Build and push Docker image
+      - name: Build and push PHP App image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: docker/php/Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ghcr.io/${{ env.IMAGE_NAME }}:latest
+            ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Build and push Nginx image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/nginx/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ env.IMAGE_NAME }}-nginx:latest
+            ghcr.io/${{ env.IMAGE_NAME }}-nginx:${{ github.sha }}
 
   deploy:
     name: Deploy via Tailscale
@@ -101,6 +103,15 @@ jobs:
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
 
+      - name: Copy docker-compose.yml via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "docker-compose.yml"
+          target: ${{ secrets.DEPLOY_PATH }}
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -111,25 +122,23 @@ jobs:
             # 1. Masuk ke direktori aplikasi
             cd ${{ secrets.DEPLOY_PATH }}
             
-            # 2. Pull perubahan terbaru dari main branch (hanya kode infra seperti docker-compose.yml)
-            git pull origin main
-            
-            # 3. Login ke GHCR agar bisa melakukan pull private/public image
+            # 2. Login ke GHCR agar bisa melakukan pull private/public image
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
-            # 4. Pull image terbaru dari GHCR
+            # 3. Pull image terbaru dari GHCR
             export GHCR_IMAGE=ghcr.io/${{ env.IMAGE_NAME }}:latest
+            export GHCR_IMAGE_NGINX=ghcr.io/${{ env.IMAGE_NAME }}-nginx:latest
             docker compose pull
             
-            # 5. Jalankan kembali container tanpa downtime (detached)
+            # 4. Jalankan kembali container tanpa downtime (detached)
             docker compose up -d
             
-            # 6. Jalankan Migrasi Database Otomatis
+            # 5. Jalankan Migrasi Database Otomatis
             docker compose exec -T app php artisan migrate --force
             
-            # 7. Optimasi Caching & Konfigurasi
+            # 6. Optimasi Caching & Konfigurasi
             docker compose exec -T app php artisan optimize:clear
             docker compose exec -T app php artisan optimize
             
-            # 8. Bersihkan dangling images agar disk server tidak penuh
+            # 7. Bersihkan dangling images agar disk server tidak penuh
             docker image prune -f
