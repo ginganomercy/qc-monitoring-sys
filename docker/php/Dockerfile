@@ -31,8 +31,8 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy existing application directory
-COPY . .
+# Copy existing application directory with correct ownership
+COPY --chown=www-data:www-data . .
 
 # Copy custom php.ini configuration
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/custom.ini
@@ -41,7 +41,7 @@ COPY docker/php/php.ini /usr/local/etc/php/conf.d/custom.ini
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Set permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
+RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Add entrypoint script

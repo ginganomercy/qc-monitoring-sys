@@ -26,7 +26,8 @@ php artisan migrate --force
 
 # Create storage link if it doesn't exist
 if [ ! -L public/storage ]; then
-    php artisan storage:link
+    rm -rf public/storage
+    php artisan storage:link || echo "Storage link creation failed but continuing boot"
 fi
 
 # Execute the main command (php-fpm)
