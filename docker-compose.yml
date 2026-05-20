@@ -6,6 +6,7 @@ services:
     restart: unless-stopped
     volumes:
       - qc_app_code:/var/www/html
+      - ./.env:/var/www/html/.env
     env_file:
       - .env
     networks:
@@ -66,6 +67,7 @@ services:
       sh -c "while true; do php artisan schedule:run --verbose --no-interaction & sleep 60; done"
     volumes:
       - qc_app_code:/var/www/html
+      - ./.env:/var/www/html/.env
     env_file:
       - .env
     networks:
