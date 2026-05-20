@@ -13,6 +13,8 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Seed in order: master data first, then transactional data
+        // Note: InspectionSeeder removed — only generates demo data,
+        // not required for production. Admins will input real inspections.
         $this->call([
             UserSeeder::class,
             ProductSeeder::class,
@@ -20,7 +22,6 @@ class DatabaseSeeder extends Seeder
             DefectTypeSeeder::class,
             ComponentSeeder::class,
             DailyTargetSeeder::class,
-            InspectionSeeder::class,
         ]);
     }
 }
