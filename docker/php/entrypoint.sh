@@ -3,7 +3,7 @@ set -e
 
 # Wait for MySQL to be ready
 echo "Waiting for MySQL to be ready..."
-until mysqladmin ping -h"$DB_HOST" -u"$DB_USERNAME" -p"$DB_PASSWORD" --silent; do
+until php -r "try { new PDO('mysql:host=' . getenv('DB_HOST') . ';dbname=' . getenv('DB_DATABASE'), getenv('DB_USERNAME'), getenv('DB_PASSWORD')); exit(0); } catch (Exception \$e) { exit(1); }"; do
     echo "MySQL is unavailable - sleeping"
     sleep 2
 done
