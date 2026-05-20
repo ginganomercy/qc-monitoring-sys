@@ -8,6 +8,10 @@ on:
     branches:
       - main
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
   lint-and-test:
     name: Code Quality & Testing
@@ -47,34 +51,88 @@ jobs:
           DB_DATABASE: database/database.sqlite
         run: php artisan test
 
-  deploy:
-    name: Build & Deploy to Baremetal
+  build-and-push:
+    name: Build Docker Image & Push to GHCR
     runs-on: ubuntu-latest
     needs: lint-and-test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
 
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/php/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    name: Deploy via Tailscale
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: "" # Optional, using authkey instead
+          oauth-secret: "" # Optional, using authkey instead
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+          version: latest
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             # 1. Masuk ke direktori aplikasi
-            cd /var/www/qc-monitoring-system
+            cd ${{ secrets.DEPLOY_PATH }}
             
-            # 2. Pull perubahan terbaru dari main branch
+            # 2. Pull perubahan terbaru dari main branch (hanya kode infra seperti docker-compose.yml)
             git pull origin main
             
-            # 3. Clean up container lama (opsional untuk menghindari caching)
-            # docker compose down
+            # 3. Login ke GHCR agar bisa melakukan pull private/public image
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
-            # 4. Build image dengan data terbaru (composer install jalan di sini)
-            docker compose build
+            # 4. Pull image terbaru dari GHCR
+            export GHCR_IMAGE=ghcr.io/${{ env.IMAGE_NAME }}:latest
+            docker compose pull
             
             # 5. Jalankan kembali container tanpa downtime (detached)
             docker compose up -d
             
-            # 6. Bersihkan dangling images agar disk server tidak penuh
+            # 6. Jalankan Migrasi Database Otomatis
+            docker compose exec -T app php artisan migrate --force
+            
+            # 7. Optimasi Caching & Konfigurasi
+            docker compose exec -T app php artisan optimize:clear
+            docker compose exec -T app php artisan optimize
+            
+            # 8. Bersihkan dangling images agar disk server tidak penuh
             docker image prune -f

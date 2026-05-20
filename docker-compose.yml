@@ -2,10 +2,7 @@ version: '3.8'
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: docker/php/Dockerfile
-    image: qc-monitoring-app
+    image: ${GHCR_IMAGE:-qc-monitoring-app:latest}
     restart: unless-stopped
     volumes:
       - .:/var/www/html
@@ -65,10 +62,7 @@ services:
       retries: 5
 
   cron:
-    build:
-      context: .
-      dockerfile: docker/php/Dockerfile
-    image: qc-monitoring-app
+    image: ${GHCR_IMAGE:-qc-monitoring-app:latest}
     restart: unless-stopped
     command: >
       sh -c "while true; do php artisan schedule:run --verbose --no-interaction & sleep 60; done"

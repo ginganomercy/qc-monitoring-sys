@@ -17,14 +17,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('inspections', function (Blueprint $table) {
-            // Rename inspector_id to user_id
+            // 1. Rename inspector_id to user_id
             $table->renameColumn('inspector_id', 'user_id');
+        });
 
-            // Add audit fields
+        Schema::table('inspections', function (Blueprint $table) {
+            // 2. Add audit fields using the new column name
             $table->unsignedBigInteger('approved_by')->nullable()->after('user_id');
             $table->timestamp('approved_at')->nullable()->after('approved_by');
 
-            // Add index for user_id (was inspector_id)
+            // 3. Add indexes
             $table->index('user_id', 'inspections_user_id_idx');
             $table->index('approved_by', 'inspections_approved_by_idx');
         });
