@@ -27,6 +27,11 @@ class ComponentResource extends Resource
 
     protected static ?string $pluralLabel = 'Komponen';
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->isAdminQC() ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -44,11 +49,6 @@ class ComponentResource extends Resource
             ]);
     }
 
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()->withCount('inspections');
-    }
-
     public static function table(Table $table): Table
     {
         return $table
@@ -61,11 +61,6 @@ class ComponentResource extends Resource
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Aktif')
                     ->boolean()
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('inspections_count')
-                    ->counts('inspections')
-                    ->label('Jumlah Inspeksi')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('created_at')

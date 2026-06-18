@@ -1,94 +1,155 @@
-# 📝 Catatan Lanjutan Deployment (cPanel)
+# 📝 Catatan Deployment — VPS Docker (qc-tengfei.momoi.my.id)
 
-> **Status Saat Ini**: Domain `qc-monitoring-tf.dev-myproject.my.id` sudah dibuat dan repositori GitHub telah berhasil ditarik (pull) ke File Manager cPanel (`public_html/repositories/qc-monitoring-sys`). **Tahap selanjutnya (Tertunda - Silakan istirahat)**: Membuat file `.env` di File Manager dan mengeksekusi perintah Terminal.
-
----
-
-## ✅ 1. Ringkasan Perubahan Terakhir (Lokal -> GitHub)
-
-- **Panel UI**: Konfigurasi `AdminPanelProvider.php` telah diubah agar aplikasi **selalu berada dalam Light Mode (putih)**, mengabaikan tema gelap pada sistem/browser user.
-- **Performa**: Package `predis/predis` telah diinstal melalui Composer. Package ini krusial agar aplikasi Laravel dapat terkoneksi dengan fitur Redis di cPanel untuk caching dan manajemen sesi yang lebih cepat.
-- **Git Repository**: Semua perubahan di atas sudah di-commit dan di-push ke branch `main` pada repository `https://github.com/ginganomercy/qc-monitoring-sys`.
+> **Status Saat Ini**: Deployment aktif ke VPS `webperpus` via Docker Compose.
+> Domain: `qc-tengfei.momoi.my.id` | Server path: `/opt/qc-monitor/`
 
 ---
 
-## 🛠️ 2. Langkah Lanjutan di cPanel (Kapanpun Dilanjutkan)
+## ✅ Ringkasan Infrastruktur
 
-### A. Konfigurasi Document Root (Kunci Keamanan)
-Saat membuat subdomain (misal: `qc-monitoring-tf.dev-myproject.my.id`), bagian terpenting untuk keamanan Laravel adalah pengaturan **Document Root**.
+### Stack Deployment
 
-1. Di form pembuatan domain, **jangan centang** "Bagikan root dokumen".
-2. Pada kolom Document Root yang muncul, isi dengan path yang berujung pada folder `public/` dari repository Anda.
-   - **Contoh (Luar public_html)**: `/repositories/qc-monitoring-sys/public`
-   - **Contoh (Dalam public_html)**: `public_html/repositories/qc-monitoring-sys/public`
-3. *Penjelasan Keamanan*: Dengan mengarahkan Document Root ke `/public`, web server Apache/LiteSpeed secara otomatis mengunci akses publik. User dari internet tidak akan pernah bisa men-download file `.env` atau folder `app/` milik Anda, sehingga sangat aman.
+| Komponen | Detail |
+|----------|--------|
+| Platform | VPS Linux (webperpus) |
+| Deployment | Docker Compose |
+| Image Registry | GHCR (`ghcr.io/ginganomercy/qc-monitoring-sys`) |
+| CI/CD | GitHub Actions (`.github/workflows/qcdeploy.yml`) |
+| Reverse Proxy | Nginx host (port 8088) di-proxy dari Nginx sistem |
+| Domain | `qc-tengfei.momoi.my.id` (via Cloudflare/Nginx host) |
 
-### B. Membuat Konfigurasi `.env` (Penting!)
-Buka **File Manager** cPanel, masuk ke root folder repository (bukan folder public). Buat file `.env` baru dan isikan:
+### Container yang Berjalan
+
+| Service | Image | Port |
+|---------|-------|------|
+| `app` | `qc-monitoring-sys:latest` | 9000 (PHP-FPM internal) |
+| `nginx` | `qc-monitoring-sys-nginx:latest` | 127.0.0.1:8088 |
+| `mysql` | `mysql:8.0` | 3306 (internal) |
+| `redis` | `redis:7-alpine` | 6379 (internal) |
+| `cron` | `qc-monitoring-sys:latest` | (schedule runner) |
+
+---
+
+## 🛠️ Konfigurasi `.env` di Server
+
+File ada di `/opt/qc-monitor/.env`. Template bersih (tanpa komentar inline):
 
 ```env
+# --- APLIKASI ---
 APP_NAME="QC Monitor"
 APP_ENV=production
-# APP_KEY biarkan kosong dulu, nanti di-generate via terminal
-APP_KEY=
 APP_DEBUG=false
-APP_URL=https://qc-monitoring-tf.dev-myproject.my.id
+APP_TIMEZONE=Asia/Jakarta
+APP_URL=http://qc-tengfei.momoi.my.id
 
-# Konfigurasi Database (Buat database & user dulu di menu MySQL Databases)
+# --- DATABASE ---
 DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
+DB_HOST=mysql
 DB_PORT=3306
-DB_DATABASE=nama_db_yang_dibuat
-DB_USERNAME=user_db_yang_dibuat
-DB_PASSWORD=password_db_yang_dibuat
+DB_DATABASE=qc_monitoring
+DB_USERNAME=qc_user
+DB_PASSWORD=<password_kuat>
 
-# Konfigurasi Redis (Untuk performa maksimal)
-CACHE_DRIVER=redis
-SESSION_DRIVER=redis
-QUEUE_CONNECTION=redis
+# --- SEEDER ADMIN ---
+SEED_ADMIN_PASSWORD=<password_admin>
 
-REDIS_CLIENT=predis
-REDIS_HOST=127.0.0.1
-REDIS_PASSWORD=null
-REDIS_PORT=6379
-REDIS_CACHE_DB=1
-REDIS_SESSION_DB=2
+APP_KEY=base64:<generated_key>
 ```
 
-### C. Eksekusi Perintah Terminal Akhir
-Buka menu **Terminal** di cPanel, lalu ketik perintah berikut secara berurutan:
-
-```bash
-# 1. Masuk ke direktori repository Anda (sesuaikan path-nya)
-cd ~/repositories/qc-monitoring-sys
-# atau cd ~/public_html/repositories/qc-monitoring-sys
-
-# 2. Install dependensi PHP untuk versi production
-composer install --optimize-autoloader --no-dev
-
-# 3. Generate Application Key (wajib untuk security)
-php artisan key:generate
-
-# 4. Jalankan Migrasi dan Seeder
-php artisan migrate --force
-php artisan db:seed --force
-
-# 5. Buat Storage Link (agar gambar/file bisa diakses)
-php artisan storage:link
-
-# 6. Bersihkan & Build Ulang Cache
-php artisan optimize:clear
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-```
-
-### D. Update Otomatis di Masa Depan
-Jika suatu saat ada perbaikan kode di lokal dan sudah di-push ke GitHub, cara updatenya sangat mudah:
-1. Buka cPanel > **Git™ Version Control**.
-2. Klik **Manage** pada repo Anda.
-3. Tab **Pull or Deploy** > klik **Update from Remote**.
-4. Buka Terminal, masuk ke folder project, lalu jalankan `php artisan optimize:clear` dan `php artisan config:cache`.
+> ⚠️ **JANGAN** tambah komentar `# ...` pada baris yang sama dengan nilai variabel `DB_*`.
+> Komentar inline menyebabkan nilai credentials terbaca salah oleh Docker, membuat `entrypoint.sh` loop tanpa henti.
 
 ---
-*Catatan ini dibuat agar proses deployment bisa dilanjutkan kapan saja tanpa kehilangan progres.*
+
+## 🔄 Alur Update Deployment
+
+```
+Lokal → push ke main
+    ↓
+GitHub Actions: pint --test → docker build → push GHCR
+    ↓
+Di server (/opt/qc-monitor):
+    docker compose pull
+    docker compose down
+    docker compose up -d
+```
+
+### Verifikasi Setelah Update
+
+```bash
+# 1. Cek semua container running
+docker compose ps
+
+# 2. Cek log app — harus muncul "MySQL is up and running"
+docker compose logs app --tail=20
+
+# 3. Test dari dalam server
+curl -H "Host: qc-tengfei.momoi.my.id" -I http://127.0.0.1
+# Expected: HTTP/1.1 200 OK atau 302 Found
+```
+
+---
+
+## 🐛 Masalah yang Pernah Terjadi & Solusinya
+
+Lihat detail lengkap di [`problem.md`](../../problem.md).
+
+| Masalah | Fix | Commit |
+|---------|-----|--------|
+| `inspector_id` not found saat seeding | Hapus `InspectionSeeder` dari `DatabaseSeeder` | `da58701` |
+| Loop `MySQL is unavailable` | Ganti `mysqladmin` → PHP PDO di `entrypoint.sh` | `e751702` |
+| `Permission denied` saat `storage:link` | `COPY --chown=www-data` di Dockerfile | `fb3f784` |
+| `.env` komentar inline merusak credentials | Edit manual di server, hapus komentar | - |
+
+---
+
+## 📋 Checklist Pertama Kali Deploy (Fresh Server)
+
+```bash
+# 1. Masuk ke direktori project
+cd /opt/qc-monitor
+
+# 2. Buat file .env (bersih, tanpa komentar inline pada baris DB_*)
+nano .env
+
+# 3. Pull image dan jalankan
+docker compose up -d
+
+# 4. Tunggu 15-20 detik, cek log
+docker compose logs app --tail=20
+
+# 5. Seed data master
+docker compose exec app php artisan db:seed --class=UserSeeder --force
+docker compose exec app php artisan db:seed --class=ProductSeeder --force
+docker compose exec app php artisan db:seed --class=LineSeeder --force
+docker compose exec app php artisan db:seed --class=DefectTypeSeeder --force
+docker compose exec app php artisan db:seed --class=ComponentSeeder --force
+docker compose exec app php artisan db:seed --class=DailyTargetSeeder --force
+
+# 6. Optimasi
+docker compose exec app php artisan optimize
+```
+
+---
+
+## 🔧 Nginx Host Server (Reverse Proxy)
+
+File konfigurasi Nginx host ada di `/etc/nginx/sites-enabled/app_cluster.conf`.
+Proxy dari port 80/443 → `127.0.0.1:8088` (container nginx Docker).
+
+```nginx
+server {
+    server_name qc-tengfei.momoi.my.id;
+    location / {
+        proxy_pass http://127.0.0.1:8088;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+Setelah edit config: `nginx -t && systemctl reload nginx`
+
+---
+
+*Catatan ini menggantikan NOTE2.md lama (cPanel deployment) yang sudah tidak relevan.*

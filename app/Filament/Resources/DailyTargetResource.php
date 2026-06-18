@@ -9,6 +9,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class DailyTargetResource extends Resource
 {
@@ -25,6 +26,21 @@ class DailyTargetResource extends Resource
     protected static ?string $label = 'Target Harian';
 
     protected static ?string $pluralLabel = 'Target Harian';
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->isAdminQC() ?? false;
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->isAdminQC() ?? false;
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->isAdminQC() ?? false;
+    }
 
     public static function form(Form $form): Form
     {
@@ -43,6 +59,10 @@ class DailyTargetResource extends Resource
                     ->default(now())
                     ->native(false),
 
+                Forms\Components\TimePicker::make('target_time')
+                    ->label('Jam Target')
+                    ->seconds(false),
+
                 Forms\Components\TextInput::make('target_quantity')
                     ->label('Jumlah Target')
                     ->required()
@@ -52,6 +72,19 @@ class DailyTargetResource extends Resource
                     ->maxValue(1000)
                     ->suffix('units'),
             ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->select('daily_targets.*')
+            ->selectSub(
+                \App\Models\Inspection::selectRaw('COUNT(*)')
+                    ->whereColumn('line_id', 'daily_targets.line_id')
+                    ->whereColumn('inspection_date', 'daily_targets.target_date')
+                    ->where('status', 'pass'),
+                'passed_count'
+            );
     }
 
     public static function table(Table $table): Table
@@ -69,11 +102,38 @@ class DailyTargetResource extends Resource
                     ->sortable()
                     ->searchable(),
 
+                Tables\Columns\TextColumn::make('target_time')
+                    ->label('Jam Target')
+                    ->time('H:i')
+                    ->sortable()
+                    ->searchable()
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('target_quantity')
-                    ->label('Jumlah Target')
+                    ->label('Target')
                     ->numeric()
                     ->sortable()
                     ->suffix(' units'),
+
+                Tables\Columns\TextColumn::make('passed_count')
+                    ->label('Berhasil (Pass)')
+                    ->numeric()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('achievement')
+                    ->label('Pencapaian')
+                    ->state(function (DailyTarget $record): string {
+                        if ($record->target_quantity <= 0) return '0%';
+                        $percent = ($record->passed_count / $record->target_quantity) * 100;
+                        return round($percent, 1) . '%';
+                    })
+                    ->badge()
+                    ->color(function (DailyTarget $record): string {
+                        $percent = $record->target_quantity > 0 ? ($record->passed_count / $record->target_quantity) * 100 : 0;
+                        if ($percent >= 100) return 'success';
+                        if ($percent >= 50) return 'warning';
+                        return 'danger';
+                    }),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Dibuat Pada')

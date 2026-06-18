@@ -73,7 +73,7 @@ class RecentInspections extends BaseWidget
                     ->placeholder('—'),
 
                 Tables\Columns\TextColumn::make('defectType.severity')
-                    ->label('Tingkat Keparahan')
+                    ->label('Severity')
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
                         'low' => 'success',

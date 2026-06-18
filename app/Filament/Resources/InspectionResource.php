@@ -28,6 +28,21 @@ class InspectionResource extends Resource
 
     protected static ?string $pluralLabel = 'Inspeksi';
 
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->isAdminQC() ?? false;
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->isAdminQC() ?? false;
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->isAdminQC() ?? false;
+    }
+
     /**
      * Optimize table queries with eager loading
      * Prevents N+1 queries on inspection list

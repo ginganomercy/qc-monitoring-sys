@@ -27,6 +27,11 @@ class ProductResource extends Resource
 
     protected static ?string $pluralLabel = 'Produk';
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->isAdminQC() ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -51,7 +56,11 @@ class ProductResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->withCount('inspections');
+        return parent::getEloquentQuery()
+            ->withCount([
+                'inspections as passed_count' => fn ($query) => $query->where('status', 'pass'),
+                'inspections as rejected_count' => fn ($query) => $query->where('status', 'reject'),
+            ]);
     }
 
     public static function table(Table $table): Table
@@ -73,9 +82,14 @@ class ProductResource extends Resource
                     ->boolean()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('inspections_count')
-                    ->counts('inspections')
-                    ->label('Jumlah Inspeksi')
+                Tables\Columns\TextColumn::make('passed_count')
+                    ->label('Passed')
+                    ->numeric()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('rejected_count')
+                    ->label('Rejected')
+                    ->numeric()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('created_at')

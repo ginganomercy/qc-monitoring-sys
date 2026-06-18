@@ -8,9 +8,28 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
+
+class User extends Authenticatable implements FilamentUser
 {
     use HasFactory, Notifiable;
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        if ($panel->getId() === 'admin') {
+            return $this->isAdminQC();
+        }
+
+        if ($panel->getId() === 'leader') {
+            return $this->isLeader();
+        }
+
+        return false;
+    }
+
+    const ROLE_ADMIN = 'admin_qc';
+    const ROLE_LEADER = 'leader';
 
     /**
      * The attributes that are mass assignable.
@@ -21,7 +40,24 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
+
+    /**
+     * Check if user is Admin QC
+     */
+    public function isAdminQC(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    /**
+     * Check if user is Leader
+     */
+    public function isLeader(): bool
+    {
+        return $this->role === self::ROLE_LEADER;
+    }
 
     /**
      * The attributes that should be hidden for serialization.

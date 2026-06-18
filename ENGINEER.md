@@ -96,7 +96,7 @@ php artisan key:generate
 
 ```sql
 -- Buat database
-CREATE DATABASE qc_monitorr CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE qc_monitoring CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
 Edit `.env`:
@@ -110,7 +110,7 @@ APP_URL=http://localhost:8000
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=qc_monitorr
+DB_DATABASE=qc_monitoring
 DB_USERNAME=root
 DB_PASSWORD=
 
@@ -139,8 +139,7 @@ php artisan serve
 
 | Email | Password | Nama |
 |-------|----------|------|
-| `admin@qc.com` | `tegal*2020` | Admin QC |
-| `alisa2891@qc.com` | `tegal*2020` | Alisa |
+| `admin@qc.com` | `SEED_ADMIN_PASSWORD` (dari `.env`) | Admin QC |
 
 > **Mode**: Admin-Only — Tidak ada role inspector. Semua input dilakukan oleh admin yang login.
 
@@ -188,7 +187,7 @@ INDEX idx_product_id      (product_id)
 INDEX idx_line_id         (line_id)
 INDEX idx_defect_type_id  (defect_type_id)
 INDEX idx_component_id    (component_id)
-INDEX idx_user_id          (user_id)
+INDEX idx_user_id         (user_id)    -- direname dari idx_inspector_id
 
 -- Composite (CRITICAL untuk dashboard)
 INDEX idx_status_date     (status, inspection_date)
@@ -357,7 +356,36 @@ REDIS_PASSWORD=null
 
 ## 🚀 Deployment Guide
 
-### Shared Hosting / VPS
+### Docker (Production — Direkomendasikan)
+
+```bash
+# 1. Setup .env tanpa komentar inline pada baris DB_*
+cp .env.example .env
+nano .env
+
+# 2. Jalankan semua container
+docker compose up -d
+
+# 3. Seed data master (pertama kali saja)
+docker compose exec app php artisan db:seed --class=UserSeeder --force
+docker compose exec app php artisan db:seed --class=ProductSeeder --force
+docker compose exec app php artisan db:seed --class=LineSeeder --force
+docker compose exec app php artisan db:seed --class=DefectTypeSeeder --force
+docker compose exec app php artisan db:seed --class=ComponentSeeder --force
+docker compose exec app php artisan db:seed --class=DailyTargetSeeder --force
+docker compose exec app php artisan optimize
+
+# 4. Update deployment berikutnya (setelah push ke main)
+docker compose pull
+docker compose down && docker compose up -d
+```
+
+> ⚠️ **Catatan Penting Docker**:
+> - `entrypoint.sh` otomatis menjalankan `migrate`, `config:cache`, `storage:link` saat boot
+> - `mysqladmin ping` diganti PHP PDO check agar kompatibel MySQL 8 `caching_sha2_password`
+> - Semua file di-copy dengan `COPY --chown=www-data:www-data` untuk menghindari permission error
+
+### Shared Hosting / VPS (Tanpa Docker)
 
 ```bash
 # 1. Upload files (exclude: /vendor, /node_modules, .env)
@@ -403,8 +431,11 @@ RewriteRule ^ index.php [L]
 | Error | Penyebab | Solusi |
 |-------|----------|--------|
 | `php_network_getaddresses` | DB host salah | Cek `DB_HOST` di `.env` |
-| `Access denied for user` | Credentials salah | Cek `DB_USERNAME` / `DB_PASSWORD` |
-| `Unknown database` | DB belum dibuat | Jalankan `CREATE DATABASE qc_monitorr` |
+| `Access denied for user` | Credentials salah atau ada komentar inline di `.env` | Cek `DB_USERNAME` / `DB_PASSWORD`, hapus komentar inline |
+| `Unknown database` | DB belum dibuat | Jalankan `CREATE DATABASE qc_monitoring` |
+| `Unknown column 'inspector_id'` | Image lama | `docker compose pull` untuk image terbaru |
+| `MySQL is unavailable - sleeping` | `mysqladmin` tidak support MySQL 8 | Fix sudah di commit `e751702` |
+| `symlink(): Permission denied` | File dimiliki root, PHP jalan sebagai www-data | Fix sudah di commit `fb3f784` |
 | `Class not found` | Autoload stale | Jalankan `composer dump-autoload` |
 | Logo tidak muncul | Path salah | Pastikan file ada di `public/images/` |
 | Cache stale | Data tidak update | `php artisan cache:clear` |

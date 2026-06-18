@@ -27,6 +27,11 @@ class DefectTypeResource extends Resource
 
     protected static ?string $pluralLabel = 'Jenis Defect';
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->isAdminQC() ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -43,7 +48,7 @@ class DefectTypeResource extends Resource
                     ->maxLength(255),
 
                 Forms\Components\Select::make('severity')
-                    ->label('Tingkat Keparahan')
+                    ->label('Severity')
                     ->options([
                         'low' => 'Rendah',
                         'medium' => 'Sedang',
@@ -61,11 +66,6 @@ class DefectTypeResource extends Resource
             ]);
     }
 
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()->withCount('inspections');
-    }
-
     public static function table(Table $table): Table
     {
         return $table
@@ -81,7 +81,7 @@ class DefectTypeResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('severity')
-                    ->label('Tingkat Keparahan')
+                    ->label('Severity')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'low' => 'success',
@@ -97,11 +97,6 @@ class DefectTypeResource extends Resource
                     ->boolean()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('inspections_count')
-                    ->counts('inspections')
-                    ->label('Jumlah Inspeksi')
-                    ->sortable(),
-
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Dibuat Pada')
                     ->dateTime()
@@ -110,7 +105,7 @@ class DefectTypeResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('severity')
-                    ->label('Tingkat Keparahan')
+                    ->label('Severity')
                     ->options([
                         'low' => 'Rendah',
                         'medium' => 'Sedang',

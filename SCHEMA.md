@@ -1,10 +1,10 @@
 # 🗄️ DATABASE SCHEMA — QC Monitoring System
 
 **Version**: 1.2
-**Database**: `qc_monitorr`
-**Engine**: MySQL 8.0+ / MariaDB 10.3+
+**Database**: `qc_monitoring`
+**Engine**: MySQL 8.0+
 **Charset**: utf8mb4_unicode_ci
-**Last Updated**: 2026-03-02
+**Last Updated**: 2026-05-20
 
 ---
 
@@ -85,13 +85,13 @@ erDiagram
         bigint defect_type_id FK
         bigint component_id FK
         text notes
-        bigint inspector_id FK
+        bigint user_id FK
         timestamp created_at
         timestamp updated_at
     }
 ```
 
-> ℹ️ **Catatan**: Tidak ada tabel Spatie Permission (roles, permissions, pivot). RBAC belum diimplementasikan.
+> ℹ️ **Catatan**: Field `inspector_id` telah direname menjadi `user_id` pada migration `2026_05_13_000001`. Tidak ada tabel Spatie Permission (roles, permissions, pivot). RBAC belum diimplementasikan.
 
 ---
 
@@ -231,8 +231,8 @@ Contoh: Sleeve, Collar, Button, Zipper, Pocket
 | `status` | ENUM | NO | MUL | `pass` / `reject` |
 | `defect_type_id` | BIGINT UNSIGNED | YES | MUL | FK → defect_types.id (nullable) |
 | `component_id` | BIGINT UNSIGNED | YES | MUL | FK → components.id (nullable) |
-| `notes` | TEXT | YES | - | Catatan inspector |
-| `inspector_id` | BIGINT UNSIGNED | NO | MUL | FK → users.id |
+| `notes` | TEXT | YES | - | Catatan admin |
+| `user_id` | BIGINT UNSIGNED | NO | MUL | FK → users.id (direname dari `inspector_id`) |
 | `created_at` | TIMESTAMP | YES | MUL | - |
 | `updated_at` | TIMESTAMP | YES | - | - |
 
@@ -246,7 +246,7 @@ INDEX idx_product_id (product_id)
 INDEX idx_line_id (line_id)
 INDEX idx_defect_type_id (defect_type_id)
 INDEX idx_component_id (component_id)
-INDEX idx_inspector_id (inspector_id)
+INDEX idx_user_id (user_id)    -- direname dari idx_inspector_id
 
 -- Performance indexes
 INDEX idx_inspection_date (inspection_date)
@@ -262,7 +262,7 @@ INDEX idx_line_date (line_id, inspection_date)
 1. `status = 'pass'` → `defect_type_id` dan `component_id` harus NULL
 2. `status = 'reject'` → `defect_type_id` WAJIB diisi
 3. `inspection_date` tidak boleh tanggal masa depan
-4. `inspector_id` otomatis dari user yang sedang login
+4. `user_id` otomatis dari user (admin) yang sedang login
 
 **ON DELETE Policies**:
 
@@ -270,7 +270,7 @@ INDEX idx_line_date (line_id, inspection_date)
 |--------|-----------|--------|
 | `products` | RESTRICT | Jaga data historis |
 | `lines` | RESTRICT | Jaga data historis |
-| `users` | RESTRICT | Jaga data inspector |
+| `users` | RESTRICT | Jaga data admin |
 | `defect_types` | SET NULL | Keep inspeksi, hilangkan klasifikasi |
 | `components` | SET NULL | Keep inspeksi, hilangkan komponen |
 
@@ -344,6 +344,7 @@ ORDER BY count DESC LIMIT 5;
 |-------|---------|------|
 | 1.0.0 | 2026-02-05 | Initial schema (users, products, lines, defect_types, components, daily_targets, inspections) |
 | 1.1.0 | 2026-02-05 | Performance indexes (`add_performance_indexes_to_tables`) |
+| 1.2.0 | 2026-05-13 | Rename `inspector_id` → `user_id`, tambah `approved_by`, `approved_at` di `inspections` |
 
 ---
 

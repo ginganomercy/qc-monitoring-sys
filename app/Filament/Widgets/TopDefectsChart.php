@@ -27,9 +27,9 @@ class TopDefectsChart extends ChartWidget
         // Single call with caching (1 query instead of 1)
         $defects = $this->queryOptimizer->getTopDefects(7, 5);
 
-        $labels = $defects->pluck('name')->toArray();
-        $data = $defects->pluck('count')->toArray();
-        $colors = $defects->pluck('color')->toArray();
+        $labels = array_column($defects, 'name');
+        $data = array_column($defects, 'count');
+        $colors = array_column($defects, 'color');
 
         return [
             'datasets' => [

@@ -38,7 +38,7 @@ class StatsOverview extends BaseWidget
                 ->color('primary')
                 ->chart($chartData['total']),
 
-            Stat::make('Tingkat Kelulusan', $dailyStats['pass_rate'].'%')
+            Stat::make('Rasio Layak', $dailyStats['pass_rate'].'%')
                 ->description($dailyStats['passed_today'].' lolos, '.$dailyStats['rejected_today'].' ditolak')
                 ->descriptionIcon($dailyStats['pass_rate'] >= 85 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down')
                 ->color($dailyStats['pass_rate'] >= 85 ? 'success' : ($dailyStats['pass_rate'] >= 70 ? 'warning' : 'danger'))
@@ -50,7 +50,7 @@ class StatsOverview extends BaseWidget
                 ->color($criticalToday === 0 ? 'success' : 'danger')
                 ->chart($chartData['rejected']),
 
-            Stat::make('Bulan Ini', $dailyStats['total_month'])
+            Stat::make('Bulan ' . now()->translatedFormat('F'), $dailyStats['total_month'])
                 ->description('Total inspeksi bulan ini')
                 ->descriptionIcon('heroicon-m-calendar-days')
                 ->color('info'),

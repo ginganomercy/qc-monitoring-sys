@@ -2,29 +2,34 @@
 
 > Catatan internal developer. Bukan untuk klien.
 
-**Last Updated**: 2026-05-13
+**Last Updated**: 2026-05-20
 
 ---
 
-## 🔄 Spring 13 Update (Admin-Only Mode)
+## 🔄 Update Terakhir (2026-05-20) — Deployment Fixes
 
 ### Changes Made
 
 1. **Database Schema**
-   - Rename `inspector_id` → `user_id` di tabel `inspections`
+   - Rename `inspector_id` → `user_id` di tabel `inspections` (migration `2026_05_13_000001`)
    - Tambah field `approved_by` dan `approved_at` untuk audit trail
 
-2. **Services Directory**
+2. **Docker Infrastructure**
+   - `entrypoint.sh`: Ganti `mysqladmin ping` → **PHP PDO check** (kompatibel MySQL 8 `caching_sha2_password`)
+   - `Dockerfile`: `COPY --chown=www-data:www-data` agar `storage:link` tidak `Permission denied`
+   - `DatabaseSeeder`: Hapus `InspectionSeeder` — data contoh tidak diperlukan di production
+
+3. **Services Directory**
    - `app/Services/BaseService.php` - Base class untuk semua services
    - `app/Services/ExportService.php` - Excel & PDF export
    - `app/Services/QueryOptimizerService.php` - Optimized dashboard queries
 
-3. **Query Optimization**
-   - Dashboard: 7 queries → 2 queries (perbaikan 70%)
+4. **Query Optimization**
+   - Dashboard: 21+ queries → 2-3 queries
    - Widget chart: 3 queries → 1 query
-   - Caching dengan 5 menit TTL
+   - Caching dengan 5 menit TTL (Redis)
 
-4. **Export Integration**
+5. **Export Integration**
    - Excel: Filter by date, product, line, status
    - PDF: Professional report dengan summary statistik
 
@@ -65,19 +70,22 @@
 
 ## 🔐 Default Credentials (Seeder)
 
-| Akun        | Email                | Password     |
-|-------------|----------------------|--------------|
-| Admin QC    | `admin@qc.com`       | `tegal*2020` |
+| Akun        | Email                | Password                              |
+|-------------|----------------------|---------------------------------------|
+| Admin QC    | `admin@qc.com`       | Nilai `SEED_ADMIN_PASSWORD` di `.env` |
 
 > **Catatan**: Semua user adalah admin. Ganti password setelah deploy ke production.
+> Password seeder dikontrol lewat variabel `SEED_ADMIN_PASSWORD` di `.env` server.
 
 ---
 
 ## 🗃️ Database
 
-- **Nama DB**: `qc_monitorr`
-- **User**: `root` (local dev), ganti ke dedicated user di production
-- **Engine**: MySQL 8.0+ / MariaDB 10.3+
+- **Nama DB**: `qc_monitoring` (production Docker), `qc_monitoring` (local dev)
+- **User**: `root` (local dev), `qc_user` (Docker production)
+- **Engine**: MySQL 8.0+ (production), MariaDB 10.3+ (kompatibel local)
+
+> ⚠️ Nama database yang benar adalah `qc_monitoring` (satu 'r'). Jangan pakai `qc_monitorr`.
 
 ### Tables
 
@@ -127,17 +135,23 @@
 | Error | Solution |
 |-------|----------|
 | `Class QueryOptimizerService not found` | Jalankan `composer dump-autoload` |
-| `Table 'inspections' doesn't have 'user_id'` | Jalankan `php artisan migrate` |
+| `Unknown column 'inspector_id'` | Sudah di-fix. Kolom direname ke `user_id` via migration `2026_05_13_000001`. Pull image terbaru. |
+| `MySQL is unavailable - sleeping` (loop) | `mysqladmin` tidak support MySQL 8. Fix: PHP PDO check di `entrypoint.sh` (commit `e751702`) |
+| `symlink(): Permission denied` | Fix: `COPY --chown=www-data` di Dockerfile (commit `fb3f784`) |
 | Export Excel/PDF error | Cek paket `maatwebsite/excel` dan `barryvdh/laravel-dompdf` |
-| Cache stale | `php artisan cache:clear` |
+| Cache stale | `php artisan cache:clear` atau `docker compose exec app php artisan optimize` |
 
 ---
 
-## 🚀 Deployment Checklist
+## 🚀 Deployment Checklist (Docker Production)
 
-- [ ] Jalankan migration baru (`php artisan migrate`)
-- [ ] Clear cache (`php artisan cache:clear`)
-- [ ] Rebuild config (`php artisan config:cache`)
+- [ ] Push kode ke `main` → tunggu GitHub Actions build selesai (hijau)
+- [ ] Di server: `docker compose pull` untuk tarik image terbaru
+- [ ] Di server: `docker compose down && docker compose up -d`
+- [ ] Cek log: `docker compose logs app --tail=20` — pastikan `MySQL is up and running`
+- [ ] Jika fresh install: seed data master per class (lihat README)
+- [ ] `docker compose exec app php artisan optimize`
+- [ ] Verifikasi login di domain
+- [ ] Test form inspeksi (create, pass, reject)
 - [ ] Test export Excel & PDF
-- [ ] Verify dashboard widgets
-- [ ] Push ke GitHub dan pull di server production
+- [ ] Verify dashboard widgets berjalan

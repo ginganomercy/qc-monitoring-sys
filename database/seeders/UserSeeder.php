@@ -26,12 +26,15 @@ class UserSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
-        // Create QC inspector user
-        User::create([
-            'name' => 'Alisa',
-            'email' => 'alisa2891@qc.com',
-            'password' => Hash::make($password),
-            'email_verified_at' => now(),
-        ]);
+        // Create Leader user
+        User::updateOrCreate(
+            ['email' => 'alisa2891@qc.com'],
+            [
+                'name' => 'Alisa (Leader)',
+                'password' => Hash::make($password),
+                'role' => User::ROLE_LEADER,
+                'email_verified_at' => now(),
+            ]
+        );
     }
 }

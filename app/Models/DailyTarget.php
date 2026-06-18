@@ -18,6 +18,7 @@ class DailyTarget extends Model
     protected $fillable = [
         'line_id',
         'target_date',
+        'target_time',
         'target_quantity',
     ];
 

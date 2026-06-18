@@ -103,7 +103,7 @@ class QueryOptimizerService
                 $date = Carbon::today()->subDays($i);
                 $dateString = $date->format('Y-m-d');
 
-                $chartData['labels'][] = $date->format('M d');
+                $chartData['labels'][] = $date->translatedFormat('l, d');
 
                 if (isset($data[$dateString])) {
                     $chartData['total'][] = $data[$dateString]->total;
@@ -145,7 +145,9 @@ class QueryOptimizerService
                         'count' => $item->count,
                         'color' => $this->getSeverityColor($item->defectType?->severity),
                     ];
-                });
+                })
+                ->values()
+                ->toArray();
         });
     }
 
